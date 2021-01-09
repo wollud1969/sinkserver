@@ -1,0 +1,8 @@
+[submodule "cube/hottislib"]
+	path = cube/hottislib
+	url = ../hottislib
+[submodule "cube/ioLibrary_Driver"]
+	path = cube/ioLibrary_Driver
+	url = ../ioLibrary_Driver
+	branch = WolfgangsOwnBranch
+
