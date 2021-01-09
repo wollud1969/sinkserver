@@ -1,0 +1,10 @@
+cube/build/
+cube/w5500.a
+cube/pubsubc.a
+.*.sw?
+*.o
+test
+.bash_history
+.vscode
+
+
