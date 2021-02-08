@@ -10,12 +10,14 @@ C_INCLUDES = \
 CC = gcc
 CFLAGS = $(C_INCLUDES) -Wall -Werror
 LDFLAGS =
+TARGET = sink20169
 
+all: $(BUILD_DIR)/$(TARGET)
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/sink20169: $(OBJECTS) Makefile
+$(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
