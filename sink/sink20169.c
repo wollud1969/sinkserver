@@ -19,10 +19,10 @@ int main() {
 
     bind(sockfd, (const struct sockaddr *) &servaddr, sizeof(servaddr));
 
-    uint8_t buf[1024];
+    uint8_t buf[800];
 
     while (1) {
-        int n = recvfrom(sockfd, buf, sizeof(buf), 0,
+        int n = recvfrom(sockfd, buf, sizeof(buf), MSG_TRUNC,
                          (struct sockaddr *) &cliaddr, &cliaddrlen);
         printf("received %d octets from %04x\n", 
                n, cliaddr.sin_addr.s_addr);
