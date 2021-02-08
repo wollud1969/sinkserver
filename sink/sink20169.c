@@ -14,7 +14,7 @@ typedef struct {
 
 const t_device devices[] = {
     { .deviceId = "MainsCnt01", .sharedSecret = "sharedSecretGanzGeheim" },
-    { .deviceId = NULL, .sharedSecret = NULL }
+    { .deviceId = "", .sharedSecret = "" }
 };
 
 
@@ -48,6 +48,10 @@ int main() {
 
         uint8_t i = 0;
         while (1) {
+            if (strlen(devices[i].deviceId) == 0) {
+                break;
+            }
+
             if (strncmp(devices[i].deviceId, buf.s.deviceId, sizeof(((t_configBlock*)0)->deviceId)) == 0) {
                 printf("Device found: %s\n", devices[i].deviceId);
 
@@ -68,7 +72,7 @@ int main() {
                 printf("DeviceId: %s\n", buf.s.deviceId);
                 printf("Location: %s\n", buf.s.location);
                 for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
-                    printf("Time: %llu, Frequency: %lu\n", buf.s.events[j].timestamp, buf.s.events[j].frequency);
+                    printf("Time: %lu, Frequency: %u\n", buf.s.events[j].timestamp, buf.s.events[j].frequency);
                 }
                 printf("\n");
 
@@ -77,6 +81,8 @@ int main() {
             } else {
                 printf("Unknown device\n");
             }
+
+            i++;
         }
 
     }
