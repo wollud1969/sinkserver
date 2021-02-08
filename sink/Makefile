@@ -1,11 +1,11 @@
 BUILD_DIR = build
 
 C_SOURCES = \
-  ../cube/User/Src/sha256.c \
-  sink20169.c
+../cube/User/Src/sha256.c \
+sink20169.c
 
 C_INCLUDES = \
-  -I../cube/User/Inc
+-I../cube/User/Inc
 
 CC = gcc
 CFLAGS = $(C_INCLUDES) -Wall -Werror
