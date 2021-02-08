@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
 
 
 int main() {
     int sockfd;
-    struct sockaddr_in servaddr;
+    struct sockaddr servaddr;
 
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
