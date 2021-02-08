@@ -59,11 +59,86 @@ int main() {
                 memcpy(receivedHash, buf.s.hash, SHA256_BLOCK_SIZE);
                 memcpy(buf.s.hash, devices[i].sharedSecret, SHA256_BLOCK_SIZE);
 
+                printf("recv. hash, 1. half is %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                       receivedHash[0],
+                       receivedHash[1],
+                       receivedHash[2],
+                       receivedHash[3],
+                       receivedHash[4],
+                       receivedHash[5],
+                       receivedHash[6],
+                       receivedHash[7],
+                       receivedHash[8],
+                       receivedHash[9],
+                       receivedHash[10],
+                       receivedHash[11],
+                       receivedHash[12],
+                       receivedHash[13],
+                       receivedHash[14],
+                       receivedHash[15]
+                       );
+                printf("recv. hash, 2. half is %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                       receivedHash[16],
+                       receivedHash[17],
+                       receivedHash[18],
+                       receivedHash[19],
+                       receivedHash[20],
+                       receivedHash[21],
+                       receivedHash[22],
+                       receivedHash[23],
+                       receivedHash[24],
+                       receivedHash[25],
+                       receivedHash[26],
+                       receivedHash[27],
+                       receivedHash[28],
+                       receivedHash[29],
+                       receivedHash[30],
+                       receivedHash[31]
+                       );
+
                 SHA256_CTX ctx;
                 uint8_t calculatedHash[SHA256_BLOCK_SIZE];
                 sha256_init(&ctx);
                 sha256_update(&ctx, buf.b, sizeof(buf.b));
                 sha256_final(&ctx, calculatedHash);
+
+                printf("calc. hash, 1. half is %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                       calculatedHash[0],
+                       calculatedHash[1],
+                       calculatedHash[2],
+                       calculatedHash[3],
+                       calculatedHash[4],
+                       calculatedHash[5],
+                       calculatedHash[6],
+                       calculatedHash[7],
+                       calculatedHash[8],
+                       calculatedHash[9],
+                       calculatedHash[10],
+                       calculatedHash[11],
+                       calculatedHash[12],
+                       calculatedHash[13],
+                       calculatedHash[14],
+                       calculatedHash[15]
+                       );
+                printf("calc. hash, 2. half is %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                       calculatedHash[16],
+                       calculatedHash[17],
+                       calculatedHash[18],
+                       calculatedHash[19],
+                       calculatedHash[20],
+                       calculatedHash[21],
+                       calculatedHash[22],
+                       calculatedHash[23],
+                       calculatedHash[24],
+                       calculatedHash[25],
+                       calculatedHash[26],
+                       calculatedHash[27],
+                       calculatedHash[28],
+                       calculatedHash[29],
+                       calculatedHash[30],
+                       calculatedHash[31]
+                       );
+
 
                 if (memcmp(receivedHash, calculatedHash, SHA256_BLOCK_SIZE) != 0) {
                     printf("Invalid hash\n");
