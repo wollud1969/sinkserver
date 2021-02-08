@@ -8,7 +8,7 @@ C_INCLUDES = \
 -I../cube/User/Inc
 
 CC = gcc
-CFLAGS = $(C_INCLUDES) -Wall -Werror
+CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99
 LDFLAGS =
 TARGET = sink20169
 
