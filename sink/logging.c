@@ -1,3 +1,6 @@
+#define __USE_BSD
+#define _BSD_SOURCE
+
 #include <syslog.h>
 #include <stdarg.h>
 
