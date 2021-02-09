@@ -8,6 +8,7 @@ receiver.c
 
 
 C_INCLUDES = \
+-I. \
 -I../cube/User/Inc
 
 CC = gcc
