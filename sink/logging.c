@@ -2,16 +2,16 @@
 
 #include <syslog.h>
 #include <stdarg.h>
-#include <stdio.h>
+// #include <stdio.h>
 
 void logmsg(int prio, const char* format, ...) {
   va_list vl;
   
-  // openlog("counter", 0, LOG_LOCAL0);
+  openlog("counter", 0, LOG_LOCAL0);
   va_start(vl, format);
-  //vsyslog(prio, format, vl);
-  vprintf(format, vl);
+  vsyslog(prio, format, vl);
+  //vprintf(format, vl);
   va_end(vl);
-  // closelog();
+  closelog();
 }
 

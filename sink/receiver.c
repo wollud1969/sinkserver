@@ -50,6 +50,7 @@ int receiver(config_t *cfg) {
             logmsg(LOG_ERR, "No sharedsecret configured for device %s", buf.s.deviceId);
             continue;
         }
+        logmsg(LOG_INFO, "SharedSecret is %s", sharedSecret);
 
         if (strlen(sharedSecret) > SHA256_BLOCK_SIZE) {
             logmsg(LOG_ERR, "Configured sharedsecret for device %s is too long", buf.s.deviceId);
