@@ -10,7 +10,7 @@ void logmsg(int prio, const char* format, ...) {
   // openlog("counter", 0, LOG_LOCAL0);
   va_start(vl, format);
   //vsyslog(prio, format, vl);
-  vprintf(prio, format, vl);
+  vprintf(format, vl);
   va_end(vl);
   // closelog();
 }
