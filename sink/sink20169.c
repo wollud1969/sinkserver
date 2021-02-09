@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <libconfig.h>
+
 #include <sinkStruct.h>
 #include <logging.h>
-#include <libconfig.h>
+#include <receiver.h>
+
 
 
 typedef struct {
