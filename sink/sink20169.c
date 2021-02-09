@@ -36,7 +36,7 @@ void readConfig() {
 int main() {
     readConfig();
     
-    int res = receiver(cfg);
+    int res = receiver(&cfg);
     if (res < 0) {
         logmsg(LOG_ERR, "receiver failed to start, error: ", res);
     }
