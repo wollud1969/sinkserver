@@ -24,7 +24,7 @@ config_t cfg;
 
 void readConfig() {
   config_init(&cfg);
-  if (! config_read_file(&cfg, "/etc/sink20169.cfg")) {
+  if (! config_read_file(&cfg, "./sink20169.cfg")) {
     logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
         config_error_file(&cfg), config_error_line(&cfg),
         config_error_text(&cfg));
