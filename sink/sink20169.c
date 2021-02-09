@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <sinkStruct.h>
 #include <logging.h>
@@ -18,7 +19,7 @@ const t_device devices[] = {
 config_t cfg;
 
 
-void readConfig() {
+int readConfig() {
   config_init(&cfg);
   if (! config_read_file(&cfg, "/etc/sink20169.cfg")) {
     logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
@@ -36,4 +37,6 @@ int main() {
     if (res < 0) {
         logmsg(LOG_ERR, "receiver failed to start, error: ", res);
     }
+
+    config_destroy(&cfg);
 }
