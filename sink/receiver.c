@@ -39,7 +39,7 @@ int receiver(config_t *cfg) {
             continue;
         }
         
-        config_setting_t *deviceConfig = config_lookup(devicesConfig, buf.s.deviceId);
+        config_setting_t *deviceConfig = config_setting_get_member(devicesConfig, buf.s.deviceId);
         if (deviceConfig == NULL) {
             logmsg(LOG_INFO, "Unknown device: %s", buf.s.deviceId);
             continue;
