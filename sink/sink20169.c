@@ -223,17 +223,17 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
         int frequency_before_point = buf->s.events[j].frequency / 1000;
         int frequency_behind_point = buf->s.events[j].frequency - (frequency_before_point * 1000);
 
-        char buf[256];
-        int res = snprintf(buf, sizeof(buf),
-                           "%s,valid=1,location=%s,host=%s freq=%d.%d %lu",
+        char payload[256];
+        int res = snprintf(payload, sizeof(payload),
+                           "%s,valid=1,location=%s,host=%s freq=%d.%03d %lu",
                            handle->influxMeasurement, buf->s.location, buf->s.deviceId, 
                            frequency_before_point, frequency_behind_point, 
                            buf->s.events[j].timestamp);
-        if (res > sizeof(buf)) {
+        if (res > sizeof(payload)) {
             logmsg(LOG_ERR, "payload buffer to small");
             return -1;
         }
-        logmsg(LOG_INFO, "Payload: %s", buf);
+        logmsg(LOG_INFO, "Payload: %s", payload);
     }
 
     return 0;

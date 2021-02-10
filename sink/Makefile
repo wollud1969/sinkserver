@@ -12,7 +12,7 @@ C_INCLUDES = \
 
 CC = gcc
 CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99
-LDFLAGS = -lconfig
+LDFLAGS = -lconfig -lcurl
 TARGET = sink20169
 
 UNAME_S := $(shell uname -s)
