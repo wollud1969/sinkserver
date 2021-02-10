@@ -61,7 +61,7 @@ void initReceiver() {
     }
 }
 
-int receiveAndVerify(t_minuteBuffer *buf) {
+int receiveAndVerifyMinuteBuffer(t_minuteBuffer *buf) {
     struct sockaddr_in servaddr, cliaddr;
     socklen_t cliaddrlen = sizeof(cliaddr);
 
@@ -110,7 +110,7 @@ int receiveAndVerify(t_minuteBuffer *buf) {
     return 0;
 }
 
-int send(t_minuteBuffer &buf) {
+int forwardMinuteBuffer(t_minuteBuffer &buf) {
     logmsg(LOG_INFO, "DeviceId: %s", buf->s.deviceId);
     logmsg(LOG_INFO, "Location: %s", buf->s.location);
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
@@ -127,10 +127,10 @@ int main() {
     while (1) {
         t_minuteBuffer buf;
         
-        if (receiveAndVerify(&buf) < 0) {
+        if (receiveAndVerifyMinuteBuffer(&buf) < 0) {
             logmsg(LOG_ERR, "error in receiveAndVerify");
         } else {
-            if (send(&buf) < 0) {
+            if (forwardMinuteBuffer(&buf) < 0) {
                 logmsg(LOG_ERR, "error in send");
             }
         }
