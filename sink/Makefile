@@ -15,6 +15,12 @@ CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99
 LDFLAGS = -lconfig
 TARGET = sink20169
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),OpenBSD)
+  CFLAGS += -I/usr/local/include
+  LDFLAGS += -L/usr/local/lib
+endif
+
 all: $(BUILD_DIR)/$(TARGET)
 
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
