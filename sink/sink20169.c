@@ -188,11 +188,52 @@ void deinitForwarder(t_forwarderHandle *handle) {
 
 }
 
+int httpPostRequest(char *url, char *user, char *pass, char *payload) {
+    CURL *curl = curl_easy_init();
+    if (! curl) {
+        logmsg(LOG_ERR, "error instantiating curl");
+        return -1;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    if (user && pass) {
+        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+        curl_easy_setopt(curl, CURLOPT_USERNAME, user);
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, pass);
+    }
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
+
+    CURLcode res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        logmsg(LOG_ERR, "post request failed: %s", curl_easy_strerror(res));
+        return -2;
+    }
+
+    curl_easy_cleanup(curl);
+
+    return 0;
+}
+
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     logmsg(LOG_INFO, "DeviceId: %s", buf->s.deviceId);
     logmsg(LOG_INFO, "Location: %s", buf->s.location);
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         logmsg(LOG_INFO, "Time: %lu, Frequency: %u", buf->s.events[j].timestamp, buf->s.events[j].frequency);
+
+        int frequency_before_point = buf->s.events[j].frequency / 1000;
+        int frequency_behind_point = buf->s.events[j].frequency - (frequency_before_point * 1000);
+
+        char buf[256];
+        int res = snprintf(buf, sizeof(buf),
+                           "%s,valid=1,location=%s,host=%s freq=%d.%d %lu",
+                           handle->influxMeasurement, buf->s.location, buf->s.deviceId, 
+                           frequency_before_point, frequency_behind_point, 
+                           buf->s.events[j].timestamp);
+        if (res > sizeof(buf)) {
+            logmsg(LOG_ERR, "payload buffer to small");
+            return -1;
+        }
+        logmsg(LOG_INFO, "Payload: %s", buf);
     }
 
     return 0;
