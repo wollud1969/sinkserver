@@ -5,11 +5,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <string.h>
 
 #include <libconfig.h>
 
 #include <sinkStruct.h>
 #include <logging.h>
+#include <sha256.h>
 
 
 config_t cfg;
@@ -66,7 +68,7 @@ int receiveAndVerifyMinuteBuffer(t_minuteBuffer *buf) {
     struct sockaddr_in servaddr, cliaddr;
     socklen_t cliaddrlen = sizeof(cliaddr);
 
-    int n = recvfrom(sockfd, buf->b, sizeof(buf->b), MSG_TRUNC,
+    int n = recvfrom(receiveSockFd, buf->b, sizeof(buf->b), MSG_TRUNC,
                         (struct sockaddr *) &cliaddr, &cliaddrlen);
     logmsg(LOG_INFO, "received %d octets from %04x", n, cliaddr.sin_addr.s_addr);
 
