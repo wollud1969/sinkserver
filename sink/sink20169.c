@@ -66,17 +66,18 @@ int initConfig(t_configHandle *configHandle) {
     configHandle->numOfDevices = config_setting_length(devicesConfig);
     configHandle->devices = (t_device*) malloc(configHandle->numOfDevices * sizeof(t_device));
     for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
-        if (! config_setting_lookup_string(devicesConfig, "deviceId", &(configHandle->devices[i].deviceId))) {
+        config_setting_t *deviceConfig = config_setting_get_elem(devicesConfig, i);
+        if (! config_setting_lookup_string(deviceConfig, "deviceId", &(configHandle->devices[i].deviceId))) {
             logmsg(LOG_ERR, "no deviceId for device %d", i);
-            return -3
+            return -3;
         }
-        if (! config_setting_lookup_string(devicesConfig, "location", &(configHandle->devices[i].location))) {
+        if (! config_setting_lookup_string(deviceConfig, "location", &(configHandle->devices[i].location))) {
             logmsg(LOG_ERR, "no location for device %d", i);
-            return -4
+            return -4;
         }
-        if (! config_setting_lookup_string(devicesConfig, "sharedSecret", &(configHandle->devices[i].sharedSecret))) {
+        if (! config_setting_lookup_string(deviceConfig, "sharedSecret", &(configHandle->devices[i].sharedSecret))) {
             logmsg(LOG_ERR, "no sharedSecret for device %d", i);
-            return -5
+            return -5;
         }
         if (strlen(configHandle->devices[i].sharedSecret) >= SHA256_BLOCK_SIZE) {
             logmsg(LOG_ERR, "Configured sharedsecret for device %d is too long", i);
@@ -101,8 +102,8 @@ void deinitConfig(t_configHandle *configHandle) {
 
 t_device *findDevice(t_configHandle *configHandle, char *deviceId) {
     for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
-        if (! strcmp(configHandle->devices[i], deviceId)) {
-            return configHandle->devices[i];
+        if (! strcmp(configHandle->devices[i].deviceId, deviceId)) {
+            return &(configHandle->devices[i]);
         }
     }
     return NULL;
