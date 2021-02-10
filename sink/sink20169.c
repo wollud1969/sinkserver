@@ -235,7 +235,7 @@ void deinitForwarder(t_forwarderHandle *handle) {
 
 }
 
-int httpPostRequest(char *url, char *user, char *pass, char *payload) {
+int httpPostRequest(char *url, const char *user, const char *pass, char *payload) {
     CURL *curl = curl_easy_init();
     if (! curl) {
         logmsg(LOG_ERR, "error instantiating curl");
