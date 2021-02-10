@@ -83,6 +83,14 @@ int initReceiver(config_t *cfg, t_receiverHandle *handle) {
     }
 }
 
+void deinitReceiver(t_receiverHandle *handle) {
+    close(handle->receiveSockFd);
+}
+
+void deinitForwarder(t_forwarderHandle *handle) {
+
+}
+
 int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) {
     struct sockaddr_in cliaddr;
     socklen_t cliaddrlen = sizeof(cliaddr);
@@ -198,6 +206,8 @@ int main() {
         }
     }
 
-    close(receiveSockFd);
+
+    deinitForwarder(&forwarderHandle);
+    deinitReceiver(&receiveHandle);
     config_destroy(&cfg);
 }
