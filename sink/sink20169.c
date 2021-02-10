@@ -30,7 +30,7 @@ void readConfig() {
         exit(-1);
     }
 
-    devicesConfig = config_lookup(cfg, "devices");
+    devicesConfig = config_lookup(&cfg, "devices");
     if (devicesConfig == NULL) {
         logmsg(LOG_ERR, "receiver: no devices configuration found");
         exit(-2);
@@ -47,7 +47,7 @@ void initReceiver() {
     }
 
     int receivePort = 20169;
-    config_setting_lookup_int(&cfg, "receivePort", &receivePort);
+    config_lookup_int(&cfg, "receivePort", &receivePort);
     if (receivePort < 1 || receivePort > 65535) {
         logmsg(LOG_ERR, "illegal receive port configured");
         exit(-4);
@@ -65,12 +65,17 @@ void initReceiver() {
 }
 
 int receiveAndVerifyMinuteBuffer(t_minuteBuffer *buf) {
-    struct sockaddr_in servaddr, cliaddr;
+    struct sockaddr_in cliaddr;
     socklen_t cliaddrlen = sizeof(cliaddr);
 
     int n = recvfrom(receiveSockFd, buf->b, sizeof(buf->b), MSG_TRUNC,
                         (struct sockaddr *) &cliaddr, &cliaddrlen);
-    logmsg(LOG_INFO, "received %d octets from %04x", n, cliaddr.sin_addr.s_addr);
+    logmsg(LOG_INFO, "received %d octets from %d.%d.%d.%d", 
+           n, 
+           (cliaddr.sin_addr.s_addr & 0x0ff), 
+           ((cliaddr.sin_addr.s_addr >> 8) & 0x0ff), 
+           ((cliaddr.sin_addr.s_addr >> 16) & 0x0ff), 
+           ((cliaddr.sin_addr.s_addr >> 24) & 0x0ff));
 
     if (n != sizeof(buf->b)) {
         logmsg(LOG_INFO, "Illegal packet size: %d", n);
@@ -113,7 +118,7 @@ int receiveAndVerifyMinuteBuffer(t_minuteBuffer *buf) {
     return 0;
 }
 
-int forwardMinuteBuffer(t_minuteBuffer &buf) {
+int forwardMinuteBuffer(t_minuteBuffer *buf) {
     logmsg(LOG_INFO, "DeviceId: %s", buf->s.deviceId);
     logmsg(LOG_INFO, "Location: %s", buf->s.location);
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
