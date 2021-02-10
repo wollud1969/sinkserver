@@ -172,7 +172,7 @@ int initForwarder(config_t *cfg, t_forwarderHandle *handle) {
         return -3;
     }
 
-    int res = snprintf(handle->influxUrl, sizeof(handle->influxUrl,
+    int res = snprintf(handle->influxUrl, sizeof(handle->influxUrl),
                        "http://%s:%d/write?db=%s&precision=s",
                        handle->influxServer, handle->influxPort, handle->influxDatabase);
     if (res > sizeof(handle->influxUrl)) {
