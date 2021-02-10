@@ -25,6 +25,7 @@ typedef struct {
 t_receiverHandle receiverHandle;
 
 typedef struct {
+    config_setting_t *devicesConfig;
     const char *influxUser;
     const char *influxPass;
     const char *influxServer;
@@ -145,6 +146,12 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
 }
 
 int initForwarder(config_t *cfg, t_forwarderHandle *handle) {
+    handle->devicesConfig = config_lookup(cfg, "devices");
+    if (handle->devicesConfig == NULL) {
+        logmsg(LOG_ERR, "no devices configuration found");
+        exit(-2);
+    }
+
     config_lookup_string(cfg, "influxUser", &(handle->influxUser));
     config_lookup_string(cfg, "influxPass", &(handle->influxPass));
     config_lookup_string(cfg, "influxServer", &(handle->influxServer));
@@ -216,7 +223,14 @@ int httpPostRequest(char *url, char *user, char *pass, char *payload) {
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     logmsg(LOG_INFO, "DeviceId: %s", buf->s.deviceId);
-    logmsg(LOG_INFO, "Location: %s", buf->s.location);
+
+    const char *location;
+    if (! config_setting_lookup_string(deviceConfig, "location", &location)) {
+        logmsg(LOG_ERR, "No location configured for device %s", buf->s.deviceId);
+        return -3;
+    }
+    logmsg(LOG_INFO, "Location: %s", location);
+
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         logmsg(LOG_INFO, "Time: %lu, Frequency: %u", buf->s.events[j].timestamp, buf->s.events[j].frequency);
 
@@ -226,7 +240,7 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
         char payload[256];
         int res = snprintf(payload, sizeof(payload),
                            "%s,valid=1,location=%s,host=%s freq=%d.%03d %lu",
-                           handle->influxMeasurement, buf->s.location, buf->s.deviceId, 
+                           handle->influxMeasurement, location, buf->s.deviceId, 
                            frequency_before_point, frequency_behind_point, 
                            buf->s.events[j].timestamp);
         if (res > sizeof(payload)) {
