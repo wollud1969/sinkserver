@@ -283,6 +283,10 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
             return -1;
         }
         logmsg(LOG_INFO, "Payload: %s", payload);
+        res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
+        if (res == 0) {
+            logmsg(LOG_INFO, "Successfully sent to InfluxDB");
+        }
     }
 
     return 0;
