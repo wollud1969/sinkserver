@@ -3,8 +3,7 @@ BUILD_DIR = build
 C_SOURCES = \
 ../cube/User/Src/sha256.c \
 sink20169.c \
-logging.c \
-receiver.c
+logging.c
 
 
 C_INCLUDES = \
