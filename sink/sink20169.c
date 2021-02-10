@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include <libconfig.h>
+#include <curl/curl.h>
 
 #include <sinkStruct.h>
 #include <logging.h>
@@ -21,7 +22,7 @@ typedef struct {
     int receiveSockFd;
 } t_receiverHandle;
 
-t_receiverHandle receiveHandle;
+t_receiverHandle receiverHandle;
 
 typedef struct {
     const char *influxUser;
@@ -30,6 +31,7 @@ typedef struct {
     uint16_t influxPort;
     const char *influxDatabase;
     const char *influxMeasurement;
+    char influxUrl[1024];
 } t_forwarderHandle;
 
 t_forwarderHandle forwarderHandle = { 
@@ -86,10 +88,6 @@ int initReceiver(config_t *cfg, t_receiverHandle *handle) {
 
 void deinitReceiver(t_receiverHandle *handle) {
     close(handle->receiveSockFd);
-}
-
-void deinitForwarder(t_forwarderHandle *handle) {
-
 }
 
 int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) {
@@ -174,7 +172,20 @@ int initForwarder(config_t *cfg, t_forwarderHandle *handle) {
         return -3;
     }
 
+    int res = snprintf(handle->influxUrl, sizeof(handle->influxUrl,
+                       "http://%s:%d/write?db=%s&precision=s",
+                       handle->influxServer, handle->influxPort, handle->influxDatabase);
+    if (res > sizeof(handle->influxUrl)) {
+        logmsg(LOG_ERR, "influxUrl has not enough space");
+        return -4;
+    }
+    logmsg(LOG_INFO, "influxUrl is %s", handle->influxUrl);
+
     return 0;
+}
+
+void deinitForwarder(t_forwarderHandle *handle) {
+
 }
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
@@ -186,13 +197,14 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
 
     return 0;
 }
+
 int main() {
     if (0 != readConfig(&cfg)) {
         logmsg(LOG_ERR, "error when reading configuration");
         exit(-1);
     }
     
-    if (0 != initReceiver(&cfg, &receiveHandle)) {
+    if (0 != initReceiver(&cfg, &receiverHandle)) {
         logmsg(LOG_ERR, "error when initializing receiver");
         exit(-2);
     }
@@ -202,10 +214,11 @@ int main() {
         exit(-2);
     }
 
+
     while (1) {
         t_minuteBuffer buf;
         
-        if (receiveAndVerifyMinuteBuffer(&receiveHandle, &buf) < 0) {
+        if (receiveAndVerifyMinuteBuffer(&receiverHandle, &buf) < 0) {
             logmsg(LOG_ERR, "error in receiveAndVerify");
             continue;
         }
@@ -217,6 +230,6 @@ int main() {
 
 
     deinitForwarder(&forwarderHandle);
-    deinitReceiver(&receiveHandle);
+    deinitReceiver(&receiverHandle);
     config_destroy(&cfg);
 }
