@@ -267,14 +267,14 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     const char *location = device->location;
 
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
-        logmsg(LOG_INFO, "Time: %lu, Frequency: %u", buf->s.events[j].timestamp, buf->s.events[j].frequency);
+        logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", buf->s.events[j].timestamp, buf->s.events[j].frequency);
 
         int frequency_before_point = buf->s.events[j].frequency / 1000;
         int frequency_behind_point = buf->s.events[j].frequency - (frequency_before_point * 1000);
 
         char payload[256];
         int res = snprintf(payload, sizeof(payload),
-                           "%s,valid=1,location=%s,host=%s freq=%d.%03d %lu",
+                           "%s,valid=1,location=%s,host=%s freq=%d.%03d %llu",
                            handle->influxMeasurement, location, buf->s.deviceId, 
                            frequency_before_point, frequency_behind_point, 
                            buf->s.events[j].timestamp);
@@ -282,13 +282,14 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
             logmsg(LOG_ERR, "payload buffer to small");
             return -1;
         }
-        logmsg(LOG_INFO, "Payload: %s", payload);
+        logmsg(LOG_DEBUG, "Payload: %s", payload);
         res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
         if (res == 0) {
-            logmsg(LOG_INFO, "Successfully sent to InfluxDB");
+            logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
         }
     }
 
+    logmsg(LOG_INFO, "Successfully sent whole minute to InfluxDB");
     return 0;
 }
 
