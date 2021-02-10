@@ -24,12 +24,12 @@ typedef struct {
 t_receiverHandle receiveHandle;
 
 typedef struct {
-    char *influxUser;
-    char *influxPass;
-    char *influxServer;
+    const char *influxUser;
+    const char *influxPass;
+    const char *influxServer;
     uint16_t influxPort;
-    char *influxDatabase;
-    char *influxMeasurement;
+    const char *influxDatabase;
+    const char *influxMeasurement;
 } t_forwarderHandle;
 
 t_forwarderHandle forwarderHandle = { 
@@ -51,8 +51,8 @@ int readConfig(config_t *cfg) {
 }
 
 int initReceiver(config_t *cfg, t_receiverHandle *handle) {
-    devicesConfig = config_lookup(&cfg, "devices");
-    if (devicesConfig == NULL) {
+    handle->devicesConfig = config_lookup(cfg, "devices");
+    if (handle->devicesConfig == NULL) {
         logmsg(LOG_ERR, "receiver: no devices configuration found");
         exit(-2);
     }
@@ -77,10 +77,11 @@ int initReceiver(config_t *cfg, t_receiverHandle *handle) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(receivePort);
 
-    if (-1 == bind(receiveSockFd, (const struct sockaddr *) &servaddr, sizeof(servaddr))) {
+    if (-1 == bind(handle->receiveSockFd, (const struct sockaddr *) &servaddr, sizeof(servaddr))) {
         logmsg(LOG_ERR, "unable to bind receive: %d", errno);
         return -3;
     }
+    return 0;
 }
 
 void deinitReceiver(t_receiverHandle *handle) {
@@ -146,23 +147,30 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
 }
 
 int initForwarder(config_t *cfg, t_forwarderHandle *handle) {
-    config_lookup_string(cfg, "influxUser", handle->influxUser);
-    config_lookup_string(cfg, "influxPass", handle->influxPass);
-    config_lookup_string(cfg, "influxServer", handle->influxServer);
-    config_lookup_int(cfg, "influxPort", &(handle->influxPort));
-    config_lookup_string(cfg, "influxDatabase", handle->influxDatabase);
-    config_lookup_string(cfg, "influxMeasurement", handle->influxMeasurement);
+    config_lookup_string(cfg, "influxUser", &(handle->influxUser));
+    config_lookup_string(cfg, "influxPass", &(handle->influxPass));
+    config_lookup_string(cfg, "influxServer", &(handle->influxServer));
+    config_lookup_string(cfg, "influxDatabase", &(handle->influxDatabase));
+    config_lookup_string(cfg, "influxMeasurement", &(handle->influxMeasurement));
+
+    int influxPort = 8086;
+    config_lookup_int(cfg, "influxPort", &influxPort);
+    if (influxPort < 1 || influxPort > 65535) {
+        logmsg(LOG_ERR, "illegal influx port configured");
+        return -2;
+    }
+    handle->influxPort = influxPort;
 
     if (! handle->influxServer) {
-        logmsg("no influxServer configured");
+        logmsg(LOG_ERR, "no influxServer configured");
         return -1;
     }
     if (! handle->influxDatabase) {
-        logmsg("no influxDatabase configured");
+        logmsg(LOG_ERR, "no influxDatabase configured");
         return -2;
     }
     if (! handle->influxMeasurement) {
-        logmsg("no influxMeasurement configured");
+        logmsg(LOG_ERR, "no influxMeasurement configured");
         return -3;
     }
 
@@ -197,12 +205,13 @@ int main() {
     while (1) {
         t_minuteBuffer buf;
         
-        if (receiveAndVerifyMinuteBuffer(&receiveHandle &buf) < 0) {
+        if (receiveAndVerifyMinuteBuffer(&receiveHandle, &buf) < 0) {
             logmsg(LOG_ERR, "error in receiveAndVerify");
-        } else {
-            if (forwardMinuteBuffer(&forwarderHandle, &buf) < 0) {
-                logmsg(LOG_ERR, "error in send");
-            }
+            continue;
+        }
+
+        if (forwardMinuteBuffer(&forwarderHandle, &buf) < 0) {
+            logmsg(LOG_ERR, "error in send");
         }
     }
 
