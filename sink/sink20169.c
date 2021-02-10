@@ -15,17 +15,25 @@
 #include <sha256.h>
 
 
-config_t cfg;
+typedef struct {
+    const char *deviceId;
+    const char *location;
+    const char *sharedSecret;
+} t_device;
 
 typedef struct {
-    config_setting_t *devicesConfig;
+    config_t cfg;
+    uint16_t numOfDevices;
+    t_device *devices;    
+} t_configHandle;
+
+typedef struct {
+    t_configHandle *configHandle;
     int receiveSockFd;
 } t_receiverHandle;
 
-t_receiverHandle receiverHandle;
-
 typedef struct {
-    config_setting_t *devicesConfig;
+    t_configHandle *configHandle;
     const char *influxUser;
     const char *influxPass;
     const char *influxServer;
@@ -35,30 +43,73 @@ typedef struct {
     char influxUrl[1024];
 } t_forwarderHandle;
 
-t_forwarderHandle forwarderHandle = { 
-    .influxUser = NULL, .influxPass = NULL, .influxServer = NULL, 
-    .influxPort = 8086, .influxDatabase = NULL, .influxMeasurement = NULL
-};
 
 
-int readConfig(config_t *cfg) {
-    config_init(cfg);
-    if (! config_read_file(cfg, "./sink20169.cfg")) {
+int initConfig(t_configHandle *configHandle) {
+    configHandle->numOfDevices = 0;
+    configHandle->devices = NULL;
+
+    config_init(&(configHandle->cfg));
+    if (! config_read_file(&(configHandle->cfg), "./sink20169.cfg")) {
         logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
-            config_error_file(cfg), config_error_line(cfg),
-            config_error_text(cfg));
-        config_destroy(cfg);
+            config_error_file(&(configHandle->cfg)), config_error_line(&(configHandle->cfg)),
+            config_error_text(&(configHandle->cfg)));
+        config_destroy(&(configHandle->cfg));
         return -1;
     }
+
+    config_setting_t *devicesConfig = config_lookup(&(configHandle->cfg), "devices");
+    if (devicesConfig == NULL) {
+        logmsg(LOG_ERR, "receiver: no devices configuration found");
+        return -2;
+    }
+    configHandle->numOfDevices = config_setting_length(devicesConfig);
+    configHandle->devices = (t_device*) malloc(configHandle->numOfDevices * sizeof(t_device));
+    for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
+        if (! config_setting_lookup_string(devicesConfig, "deviceId", &(configHandle->devices[i].deviceId))) {
+            logmsg(LOG_ERR, "no deviceId for device %d", i);
+            return -3
+        }
+        if (! config_setting_lookup_string(devicesConfig, "location", &(configHandle->devices[i].location))) {
+            logmsg(LOG_ERR, "no location for device %d", i);
+            return -4
+        }
+        if (! config_setting_lookup_string(devicesConfig, "sharedSecret", &(configHandle->devices[i].sharedSecret))) {
+            logmsg(LOG_ERR, "no sharedSecret for device %d", i);
+            return -5
+        }
+        if (strlen(configHandle->devices[i].sharedSecret) >= SHA256_BLOCK_SIZE) {
+            logmsg(LOG_ERR, "Configured sharedsecret for device %d is too long", i);
+            return -6;
+        }
+        logmsg(LOG_INFO, "Device loaded: %d %s %s %s", i, 
+               configHandle->devices[i].deviceId, 
+               configHandle->devices[i].location, 
+               configHandle->devices[i].sharedSecret);
+    }
+
     return 0;
 }
 
-int initReceiver(config_t *cfg, t_receiverHandle *handle) {
-    handle->devicesConfig = config_lookup(cfg, "devices");
-    if (handle->devicesConfig == NULL) {
-        logmsg(LOG_ERR, "receiver: no devices configuration found");
-        exit(-2);
+void deinitConfig(t_configHandle *configHandle) {
+    config_destroy(&(configHandle->cfg));
+    if (configHandle->devices) {
+        free(configHandle->devices);
+        configHandle->devices = NULL;
     }
+}
+
+t_device *findDevice(t_configHandle *configHandle, char *deviceId) {
+    for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
+        if (! strcmp(configHandle->devices[i], deviceId)) {
+            return configHandle->devices[i];
+        }
+    }
+    return NULL;
+}
+
+int initReceiver(t_configHandle *configHandle, t_receiverHandle *handle) {
+    handle->configHandle = configHandle;
 
     struct sockaddr_in servaddr;
 
@@ -69,7 +120,7 @@ int initReceiver(config_t *cfg, t_receiverHandle *handle) {
     }
 
     int receivePort = 20169;
-    config_lookup_int(cfg, "receivePort", &receivePort);
+    config_lookup_int(&(configHandle->cfg), "receivePort", &receivePort);
     if (receivePort < 1 || receivePort > 65535) {
         logmsg(LOG_ERR, "illegal receive port configured");
         return -2;
@@ -108,24 +159,9 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
         logmsg(LOG_INFO, "Illegal packet size: %d", n);
         return -1;
     }
-    
-    config_setting_t *deviceConfig = config_setting_get_member(handle->devicesConfig, buf->s.deviceId);
-    if (deviceConfig == NULL) {
-        logmsg(LOG_INFO, "Unknown device: %s", buf->s.deviceId);
-        return -2;
-    } 
-    
-    const char *sharedSecret;
-    if (! config_setting_lookup_string(deviceConfig, "sharedSecret", &sharedSecret)) {
-        logmsg(LOG_ERR, "No sharedsecret configured for device %s", buf->s.deviceId);
-        return -3;
-    }
-    // logmsg(LOG_INFO, "SharedSecret is %s", sharedSecret);
 
-    if (strlen(sharedSecret) >= SHA256_BLOCK_SIZE) {
-        logmsg(LOG_ERR, "Configured sharedsecret for device %s is too long", buf->s.deviceId);
-        return -4;
-    }
+    t_device *device = findDevice(handle->configHandle, buf->s.deviceId);    
+    const char *sharedSecret = device->sharedSecret;
 
     uint8_t receivedHash[SHA256_BLOCK_SIZE];
     memcpy(receivedHash, buf->s.hash, SHA256_BLOCK_SIZE);
@@ -145,21 +181,24 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
     return 0;
 }
 
-int initForwarder(config_t *cfg, t_forwarderHandle *handle) {
-    handle->devicesConfig = config_lookup(cfg, "devices");
-    if (handle->devicesConfig == NULL) {
-        logmsg(LOG_ERR, "no devices configuration found");
-        exit(-2);
-    }
 
-    config_lookup_string(cfg, "influxUser", &(handle->influxUser));
-    config_lookup_string(cfg, "influxPass", &(handle->influxPass));
-    config_lookup_string(cfg, "influxServer", &(handle->influxServer));
-    config_lookup_string(cfg, "influxDatabase", &(handle->influxDatabase));
-    config_lookup_string(cfg, "influxMeasurement", &(handle->influxMeasurement));
+int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
+    handle->configHandle = configHandle;
+
+    handle->influxUser = NULL;
+    handle->influxPass = NULL;
+    handle->influxServer = NULL;
+    handle->influxDatabase = NULL;
+    handle->influxMeasurement = NULL;
+
+    config_lookup_string(&(configHandle->cfg), "influxUser", &(handle->influxUser));
+    config_lookup_string(&(configHandle->cfg), "influxPass", &(handle->influxPass));
+    config_lookup_string(&(configHandle->cfg), "influxServer", &(handle->influxServer));
+    config_lookup_string(&(configHandle->cfg), "influxDatabase", &(handle->influxDatabase));
+    config_lookup_string(&(configHandle->cfg), "influxMeasurement", &(handle->influxMeasurement));
 
     int influxPort = 8086;
-    config_lookup_int(cfg, "influxPort", &influxPort);
+    config_lookup_int(&(configHandle->cfg), "influxPort", &influxPort);
     if (influxPort < 1 || influxPort > 65535) {
         logmsg(LOG_ERR, "illegal influx port configured");
         return -2;
@@ -223,13 +262,8 @@ int httpPostRequest(char *url, char *user, char *pass, char *payload) {
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     logmsg(LOG_INFO, "DeviceId: %s", buf->s.deviceId);
-
-    const char *location;
-    if (! config_setting_lookup_string(deviceConfig, "location", &location)) {
-        logmsg(LOG_ERR, "No location configured for device %s", buf->s.deviceId);
-        return -3;
-    }
-    logmsg(LOG_INFO, "Location: %s", location);
+    t_device *device = findDevice(handle->configHandle, buf->s.deviceId);
+    const char *location = device->location;
 
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         logmsg(LOG_INFO, "Time: %lu, Frequency: %u", buf->s.events[j].timestamp, buf->s.events[j].frequency);
@@ -254,17 +288,22 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
 }
 
 int main() {
-    if (0 != readConfig(&cfg)) {
+    t_configHandle configHandle;
+    t_forwarderHandle forwarderHandle;
+    t_receiverHandle receiverHandle;
+
+
+    if (0 != initConfig(&configHandle)) {
         logmsg(LOG_ERR, "error when reading configuration");
         exit(-1);
     }
     
-    if (0 != initReceiver(&cfg, &receiverHandle)) {
+    if (0 != initReceiver(&configHandle, &receiverHandle)) {
         logmsg(LOG_ERR, "error when initializing receiver");
         exit(-2);
     }
 
-    if (0 != initForwarder(&cfg, &forwarderHandle)) {
+    if (0 != initForwarder(&configHandle, &forwarderHandle)) {
         logmsg(LOG_ERR, "error when initializing forwarder");
         exit(-2);
     }
@@ -286,5 +325,5 @@ int main() {
 
     deinitForwarder(&forwarderHandle);
     deinitReceiver(&receiverHandle);
-    config_destroy(&cfg);
+    deinitConfig(&configHandle);
 }
