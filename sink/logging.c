@@ -43,7 +43,7 @@ void logmsg(int prio, const char* format, ...) {
   va_end(vl);
 
   if (verbose) {
-    printf(buf);
+    printf("%s\n", buf);
   }
 
   openlog("counter", 0, facility);
