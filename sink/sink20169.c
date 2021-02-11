@@ -15,6 +15,8 @@
 #include <sha256.h>
 
 
+const char DEFAULT_CONFIG_FILENAME[] = "./sink20169.cfg";
+
 typedef struct {
     const char *deviceId;
     const char *location;
@@ -44,13 +46,12 @@ typedef struct {
 } t_forwarderHandle;
 
 
-
-int initConfig(t_configHandle *configHandle) {
+int initConfig(char *configFilename, t_configHandle *configHandle) {
     configHandle->numOfDevices = 0;
     configHandle->devices = NULL;
 
     config_init(&(configHandle->cfg));
-    if (! config_read_file(&(configHandle->cfg), "./sink20169.cfg")) {
+    if (! config_read_file(&(configHandle->cfg), configFilename)) {
         logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
             config_error_file(&(configHandle->cfg)), config_error_line(&(configHandle->cfg)),
             config_error_text(&(configHandle->cfg)));
@@ -299,13 +300,23 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     return 0;
 }
 
-int main() {
+int main(int argc, char **argv) {
     t_configHandle configHandle;
     t_forwarderHandle forwarderHandle;
     t_receiverHandle receiverHandle;
 
 
-    if (0 != initConfig(&configHandle)) {
+    char *configFilename = DEFAULT_CONFIG_FILENAME;
+
+    while ((int c = getopt(argc, argv, "f:")) != -1) {
+        switch (c) {
+            case 'f':
+                configFilename = strdup(optarg);
+                break;
+        }
+    }
+
+    if (0 != initConfig(configFilename, &configHandle)) {
         logmsg(LOG_ERR, "error when reading configuration");
         exit(-1);
     }
