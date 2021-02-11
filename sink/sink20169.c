@@ -329,7 +329,7 @@ int main(int argc, char **argv) {
 
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
-    const char dropPrivilegesToUser = NULL;
+    const char *dropPrivilegesToUser = NULL;
     bool doFork = false;
 
     int c;
