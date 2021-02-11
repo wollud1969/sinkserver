@@ -308,7 +308,8 @@ int main(int argc, char **argv) {
 
     char *configFilename = DEFAULT_CONFIG_FILENAME;
 
-    while ((int c = getopt(argc, argv, "f:")) != -1) {
+    int c;
+    while ((c = getopt(argc, argv, "f:")) != -1) {
         switch (c) {
             case 'f':
                 configFilename = strdup(optarg);
