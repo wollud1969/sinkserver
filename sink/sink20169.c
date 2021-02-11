@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -47,6 +48,8 @@ typedef struct {
     const char *influxMeasurement;
     char influxUrl[1024];
 } t_forwarderHandle;
+
+bool verbose = false;
 
 
 int initConfig(const char *configFilename, t_configHandle *configHandle) {
@@ -312,10 +315,21 @@ int main(int argc, char **argv) {
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
 
     int c;
-    while ((c = getopt(argc, argv, "f:")) != -1) {
+    while ((c = getopt(argc, argv, "f:vs:")) != -1) {
         switch (c) {
             case 'f':
                 configFilename = strdup(optarg);
+                break;
+            case 'v':
+                verbose = true;
+                break;
+            case 's':
+                setfacility(optarg);
+                break;
+            case 'h':
+                printf("sinkserver for mainsfrequency counter\n");
+                printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32\n");
+                printf("Version: " VERSION "\n");
                 break;
         }
     }
