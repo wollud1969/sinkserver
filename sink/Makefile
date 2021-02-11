@@ -13,7 +13,7 @@ C_INCLUDES = \
 VERSION := $(shell git rev-parse --short=8 HEAD)
 
 CC = gcc
-CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99 -DVERSION=$(VERSION)
+CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99 -DVERSION="\"$(VERSION)\""
 LDFLAGS = -lconfig -lcurl
 TARGET = sink20169
 
