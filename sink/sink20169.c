@@ -315,6 +315,8 @@ void usage() {
     printf("  -v ............... Verbose, writes all logging on stdout too\n");
     printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
     printf("                     USER and DAEMON are supported\n");
+    printf("  -n UID ........... If started as root drop privileges and become\n");
+    printf("                     user with id UID\n");
     printf("  -h ............... This help\n");
 }
 
@@ -325,9 +327,10 @@ int main(int argc, char **argv) {
 
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
+    uid_t dropPrivilegesToUID = 0;
 
     int c;
-    while ((c = getopt(argc, argv, "f:vs:h")) != -1) {
+    while ((c = getopt(argc, argv, "f:vs:hn:")) != -1) {
         switch (c) {
             case 'f':
                 configFilename = strdup(optarg);
@@ -338,10 +341,21 @@ int main(int argc, char **argv) {
             case 's':
                 setfacility(optarg);
                 break;
+            case 'n':
+                dropPrivilegesToUID = (uid_t) strtol(optarg, NULL, 10);
+                break;
             case 'h':
                 usage();
                 exit(0);
                 break;
+        }
+    }
+
+    if ((getuid() == 0) && (dropPrivilegesToUID != 0)) {
+        logmsg(LOG_INFO, "dropping root privileges");
+        if (setuid(dropPrivilegesToUID) != 0) {
+            logmsg(LOG_ERR, "unable to drop root privileges");
+            exit(-1);
         }
     }
 
