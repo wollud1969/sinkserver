@@ -318,6 +318,7 @@ void usage() {
     printf("                     USER and DAEMON are supported\n");
     printf("  -n USER .......... If started as root drop privileges and become\n");
     printf("                     USER\n");
+    printf("  -b ............... fork into background\n");
     printf("  -h ............... This help\n");
 }
 
@@ -329,6 +330,7 @@ int main(int argc, char **argv) {
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
     const char dropPrivilegesToUser = NULL;
+    bool doFork = false;
 
     int c;
     while ((c = getopt(argc, argv, "f:vs:hn:")) != -1) {
@@ -345,6 +347,9 @@ int main(int argc, char **argv) {
             case 'n':
                 dropPrivilegesToUser = strdup(optarg);
                 break;
+            case 'b':
+                doFork = true;
+                break;
             case 'h':
                 usage();
                 exit(0);
@@ -357,28 +362,40 @@ int main(int argc, char **argv) {
         passwd *userEntry = getpwnam(dropPrivilegesToUser);
         if (userEntry == NULL) {
             logmsg(LOG_ERR, "can not find entry for user %s", dropPrivilegesToUser);
-            exit(-1);
+            exit(1);
         }        
 
         if (setuid(userEntry->pw_uid) != 0) {
             logmsg(LOG_ERR, "unable to drop root privileges to %d", userEntry->pw_uid);
-            exit(-1);
+            exit(2);
         }
     }
 
     if (0 != initConfig(configFilename, &configHandle)) {
         logmsg(LOG_ERR, "error when reading configuration");
-        exit(-1);
+        exit(3);
     }
     
+    if (doFork) {
+        int pid = fork();
+        if (pid == -1) {
+            logmsg(LOG_ERR, "error when forking into background: %d", errno);
+            exit(4);
+        }
+        if (pid != 0) {
+            logmsg(LOG_INFO, "successfully forking into background, child's pid is %d", pid);
+            exit(0);
+        }
+    }
+
     if (0 != initReceiver(&configHandle, &receiverHandle)) {
         logmsg(LOG_ERR, "error when initializing receiver");
-        exit(-2);
+        exit(5);
     }
 
     if (0 != initForwarder(&configHandle, &forwarderHandle)) {
         logmsg(LOG_ERR, "error when initializing forwarder");
-        exit(-2);
+        exit(6);
     }
 
 
