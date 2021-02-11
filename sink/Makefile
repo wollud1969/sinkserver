@@ -39,8 +39,3 @@ $(BUILD_DIR):
 .phony: clean
 clean:
 	-rm -rf $(BUILD_DIR)
-
-.phony: show
-show:
-	echo $(CFLAGS)
-
