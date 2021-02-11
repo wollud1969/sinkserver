@@ -378,5 +378,4 @@ int main(int argc, char **argv) {
     deinitForwarder(&forwarderHandle);
     deinitReceiver(&receiverHandle);
     deinitConfig(&configHandle);
-    free(configFilename);
 }
