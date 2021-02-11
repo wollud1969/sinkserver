@@ -6,19 +6,19 @@ sink20169.c \
 logging.c
 
 
-OS := $(shell uname -s)
-
 C_INCLUDES = \
 -I. \
 -I../cube/User/Inc
 
 CC = gcc
-CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99 -DOS=$(OS)
+CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99
 LDFLAGS = -lconfig -lcurl
 TARGET = sink20169
 
-ifeq ($(OS),OpenBSD)
-  CFLAGS += -I/usr/local/include
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),OpenBSD)
+  CFLAGS += -I/usr/local/include -DOpenBSD=1
   LDFLAGS += -L/usr/local/lib
 endif
 
