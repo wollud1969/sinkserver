@@ -275,7 +275,7 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
         char payload[256];
         int res = snprintf(payload, sizeof(payload),
                            "%s,valid=1,location=%s,host=%s freq=%d.%03d"
-                           "" %llu"
+                           " %llu"
                            "",
                            handle->influxMeasurement, location, buf->s.deviceId, 
                            frequency_before_point, frequency_behind_point, 
