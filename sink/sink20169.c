@@ -359,7 +359,7 @@ int main(int argc, char **argv) {
 
     if ((getuid() == 0) && (dropPrivilegesToUser != NULL)) {
         logmsg(LOG_INFO, "dropping root privileges, become %s", dropPrivilegesToUser);
-        passwd *userEntry = getpwnam(dropPrivilegesToUser);
+        struct passwd *userEntry = getpwnam(dropPrivilegesToUser);
         if (userEntry == NULL) {
             logmsg(LOG_ERR, "can not find entry for user %s", dropPrivilegesToUser);
             exit(1);
