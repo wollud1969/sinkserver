@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <getopt.h>
+#include <pwd.h>
 
 #include <libconfig.h>
 #include <curl/curl.h>
@@ -315,8 +316,8 @@ void usage() {
     printf("  -v ............... Verbose, writes all logging on stdout too\n");
     printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
     printf("                     USER and DAEMON are supported\n");
-    printf("  -n UID ........... If started as root drop privileges and become\n");
-    printf("                     user with id UID\n");
+    printf("  -n USER .......... If started as root drop privileges and become\n");
+    printf("                     USER\n");
     printf("  -h ............... This help\n");
 }
 
@@ -327,7 +328,7 @@ int main(int argc, char **argv) {
 
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
-    uid_t dropPrivilegesToUID = 0;
+    const char dropPrivilegesToUser = NULL;
 
     int c;
     while ((c = getopt(argc, argv, "f:vs:hn:")) != -1) {
@@ -342,7 +343,7 @@ int main(int argc, char **argv) {
                 setfacility(optarg);
                 break;
             case 'n':
-                dropPrivilegesToUID = (uid_t) strtol(optarg, NULL, 10);
+                dropPrivilegesToUser = strdup(optarg);
                 break;
             case 'h':
                 usage();
@@ -351,10 +352,16 @@ int main(int argc, char **argv) {
         }
     }
 
-    if ((getuid() == 0) && (dropPrivilegesToUID != 0)) {
-        logmsg(LOG_INFO, "dropping root privileges");
-        if (setuid(dropPrivilegesToUID) != 0) {
-            logmsg(LOG_ERR, "unable to drop root privileges");
+    if ((getuid() == 0) && (dropPrivilegesToUser != NULL)) {
+        logmsg(LOG_INFO, "dropping root privileges, become %s", dropPrivilegesToUser);
+        passwd *userEntry = getpwnam(dropPrivilegesToUser);
+        if (userEntry == NULL) {
+            logmsg(LOG_ERR, "can not find entry for user %s", dropPrivilegesToUser);
+            exit(-1);
+        }        
+
+        if (setuid(userEntry->pw_uid) != 0) {
+            logmsg(LOG_ERR, "unable to drop root privileges to %d", userEntry->pw_uid);
             exit(-1);
         }
     }
