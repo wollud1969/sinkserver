@@ -336,6 +336,7 @@ int main(int argc, char **argv) {
                 printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
                 printf("                     USER and DAEMON are supported\n");
                 printf("  -h ............... This help\n");
+                exit(0);
                 break;
         }
     }
