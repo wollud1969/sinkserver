@@ -6,17 +6,18 @@ sink20169.c \
 logging.c
 
 
+OS := $(shell uname -s)
+
 C_INCLUDES = \
 -I. \
 -I../cube/User/Inc
 
 CC = gcc
-CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99
+CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99 -DOS=$(OS)
 LDFLAGS = -lconfig -lcurl
 TARGET = sink20169
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),OpenBSD)
+ifeq ($(OS),OpenBSD)
   CFLAGS += -I/usr/local/include
   LDFLAGS += -L/usr/local/lib
 endif
@@ -38,3 +39,8 @@ $(BUILD_DIR):
 .phony: clean
 clean:
 	-rm -rf $(BUILD_DIR)
+
+.phony: show
+show:
+	echo $(CFLAGS)
+
