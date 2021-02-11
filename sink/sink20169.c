@@ -306,6 +306,18 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     return 0;
 }
 
+void usage() {
+    printf("sinkserver for mainsfrequency counter\n");
+    printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32\n");
+    printf("Version: " VERSION "\n");
+    printf("\nUsage\n");
+    printf("  -f FILENAME R..... Config file to be used\n");
+    printf("  -v ............... Verbose, writes all logging on stdout too\n");
+    printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
+    printf("                     USER and DAEMON are supported\n");
+    printf("  -h ............... This help\n");
+}
+
 int main(int argc, char **argv) {
     t_configHandle configHandle;
     t_forwarderHandle forwarderHandle;
@@ -327,15 +339,7 @@ int main(int argc, char **argv) {
                 setfacility(optarg);
                 break;
             case 'h':
-                printf("sinkserver for mainsfrequency counter\n");
-                printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32\n");
-                printf("Version: " VERSION "\n");
-                printf("\nUsage\n");
-                printf("  -f FILENAME R..... Config file to be used\n");
-                printf("  -v ............... Verbose, writes all logging on stdout too\n");
-                printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
-                printf("                     USER and DAEMON are supported\n");
-                printf("  -h ............... This help\n");
+                usage();
                 exit(0);
                 break;
         }
@@ -374,4 +378,5 @@ int main(int argc, char **argv) {
     deinitForwarder(&forwarderHandle);
     deinitReceiver(&receiverHandle);
     deinitConfig(&configHandle);
+    free(configFilename);
 }
