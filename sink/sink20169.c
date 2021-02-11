@@ -315,7 +315,7 @@ int main(int argc, char **argv) {
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
 
     int c;
-    while ((c = getopt(argc, argv, "f:vs:")) != -1) {
+    while ((c = getopt(argc, argv, "f:vs:h")) != -1) {
         switch (c) {
             case 'f':
                 configFilename = strdup(optarg);
@@ -330,6 +330,12 @@ int main(int argc, char **argv) {
                 printf("sinkserver for mainsfrequency counter\n");
                 printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32\n");
                 printf("Version: " VERSION "\n");
+                printf("\nUsage\n");
+                printf("  -f FILENAME R..... Config file to be used\n");
+                printf("  -v ............... Verbose, writes all logging on stdout too\n");
+                printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
+                printf("                     USER and DAEMON are supported\n");
+                printf("  -h ............... This help\n");
                 break;
         }
     }
