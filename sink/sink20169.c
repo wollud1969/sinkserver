@@ -46,7 +46,7 @@ typedef struct {
 } t_forwarderHandle;
 
 
-int initConfig(char *configFilename, t_configHandle *configHandle) {
+int initConfig(const char *configFilename, t_configHandle *configHandle) {
     configHandle->numOfDevices = 0;
     configHandle->devices = NULL;
 
@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
     t_receiverHandle receiverHandle;
 
 
-    char *configFilename = DEFAULT_CONFIG_FILENAME;
+    const char *configFilename = DEFAULT_CONFIG_FILENAME;
 
     int c;
     while ((c = getopt(argc, argv, "f:")) != -1) {
