@@ -47,7 +47,7 @@ void logmsg(int prio, const char* format, ...) {
   }
 
   openlog("counter", 0, facility);
-  syslog(prio, buf);
+  syslog(prio, "%s", buf);
   closelog();
 }
 
