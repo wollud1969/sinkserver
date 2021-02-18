@@ -270,8 +270,9 @@ int httpPostRequest(char *url, const char *user, const char *pass, char *payload
 }
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
-    logmsg(LOG_INFO, "DeviceId: %s, RunningHours: %u, Powercycles: %u, WatchdogResets: %u", 
-           buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets);
+    logmsg(LOG_INFO, "D: %s, R: %u, P: %u, W: %u, V: %08x", 
+           buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets,
+           buf->s.version);
            
     t_device *device = findDevice(handle->configHandle, buf->s.deviceId);
     const char *location = device->location;
