@@ -387,6 +387,8 @@ int main(int argc, char **argv) {
         }
     }
 
+    logmsg(LOG_INFO, "Version: " VERSION);
+
     if (0 != initConfig(configFilename, &configHandle)) {
         logmsg(LOG_ERR, "error when reading configuration");
         exit(3);
