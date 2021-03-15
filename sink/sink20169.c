@@ -41,6 +41,8 @@ typedef struct {
 
 typedef struct {
     t_configHandle *configHandle;
+    uint32_t lowerBound;
+    uint32_t upperBound;
     const char *influxUser;
     const char *influxPass;
     const char *influxServer;
@@ -236,6 +238,14 @@ int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
     }
     logmsg(LOG_INFO, "influxUrl is %s", handle->influxUrl);
 
+    uint32_t lowerBound = 45000;
+    config_lookup_int(&(configHandle->cfg), "lowerBound", &lowerBound);
+    handle->lowerBound = lowerBound;
+    uint32_t upperBound = 55000;
+    config_lookup_int(&(configHandle->cfg), "upperBound", &upperBound);
+    handle->upperBound = upperBound;
+    logmsg(LOG_INFO, "lowerBound: %u, upperBound: %u", lowerBound, upperBound);
+
     return 0;
 }
 
@@ -280,30 +290,34 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         uint64_t timestamp = buf->s.timestamp + j;
         logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
+        
+        if ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) {
+			int frequency_before_point = buf->s.frequency[j] / 1000;
+			int frequency_behind_point = buf->s.frequency[j] - (frequency_before_point * 1000);
 
-        int frequency_before_point = buf->s.frequency[j] / 1000;
-        int frequency_behind_point = buf->s.frequency[j] - (frequency_before_point * 1000);
-
-        char payload[256];
-        int res = snprintf(payload, sizeof(payload),
-                           "%s,valid=1,location=%s,host=%s freq=%d.%03d"
-#ifdef OpenBSD
-                           " %llu"
-#else
-                           " %lu"
-#endif                                                      
-                           "",
-                           handle->influxMeasurement, location, buf->s.deviceId, 
-                           frequency_before_point, frequency_behind_point, 
-                           timestamp);
-        if (res > sizeof(payload)) {
-            logmsg(LOG_ERR, "payload buffer to small");
-            return -1;
-        }
-        logmsg(LOG_DEBUG, "Payload: %s", payload);
-        res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
-        if (res == 0) {
-            logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
+			char payload[256];
+			int res = snprintf(payload, sizeof(payload),
+							   "%s,valid=1,location=%s,host=%s freq=%d.%03d"
+	#ifdef OpenBSD
+							   " %llu"
+	#else
+							   " %lu"
+	#endif                                                      
+							   "",
+							   handle->influxMeasurement, location, buf->s.deviceId, 
+							   frequency_before_point, frequency_behind_point, 
+							   timestamp);
+			if (res > sizeof(payload)) {
+				logmsg(LOG_ERR, "payload buffer to small");
+				return -1;
+			}
+			logmsg(LOG_DEBUG, "Payload: %s", payload);
+			res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
+			if (res == 0) {
+				logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
+			}
+        } else {
+            logmsg(LOG_ERR, "%u out of bound", buf->s.frequency[j]);
         }
     }
 

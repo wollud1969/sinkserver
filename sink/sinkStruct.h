@@ -3,11 +3,10 @@
 
 #include <stdint.h>
 #include <sha256.h>
-#include <config.h>
 
 #define SECONDS_PER_MINUTE 60
 typedef struct __attribute__((__packed__)) {
-    char deviceId[sizeof(((t_configBlock*)0)->deviceId)];
+    char deviceId[16];
     uint8_t hash[SHA256_BLOCK_SIZE];
     uint32_t totalRunningHours;
     uint32_t totalPowercycles;
