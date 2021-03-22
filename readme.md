@@ -21,6 +21,8 @@ The timestamp should be the UNIX time (seconds since epoch (midnight 1970-01-01 
 
 `frequency` finally are the averaged frequency values of the seconds of one minute in mHz.
 
+The sink server filters frequency values which are less than 45000mHz and greater than 55000mHz. Frequency gradient filtering is currently not applied.
+
 Device Id and corresponding shared secret are provisioned into the devices, the sinkserver has them in a configuration together with the location where the device is deployed.
 
 The sinkserver is deployed under the name `sink.hottis.de` and receives at UDP port 20169.
