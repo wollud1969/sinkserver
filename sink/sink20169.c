@@ -172,6 +172,10 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
     }
 
     t_device *device = findDevice(handle->configHandle, buf->s.deviceId);    
+    if (device == NULL) {
+        logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
+        return -4;
+    }
     const char *sharedSecret = device->sharedSecret;
 
     uint8_t receivedHash[SHA256_BLOCK_SIZE];
@@ -260,7 +264,7 @@ int httpPostRequest(char *url, const char *user, const char *pass, char *payload
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
     if (user && pass) {
-        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_easy_setopt(curl, CURLOPT_USERNAME, user);
         curl_easy_setopt(curl, CURLOPT_PASSWORD, pass);
     }
@@ -278,13 +282,17 @@ int httpPostRequest(char *url, const char *user, const char *pass, char *payload
 }
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
-    logmsg(LOG_INFO, "D: %s, R: %u, P: %u, W: %u, V: %08x", 
-           buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets,
-           buf->s.version);
-           
     t_device *device = findDevice(handle->configHandle, buf->s.deviceId);
+    if (device == NULL) {
+        logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
+        return -4;
+    }
     const char *location = device->location;
 
+    logmsg(LOG_INFO, "D: %s, R: %u, P: %u, W: %u, V: %08x, L: %s", 
+           buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets,
+           buf->s.version, location);
+           
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         uint64_t timestamp = buf->s.timestamp + j;
         logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
