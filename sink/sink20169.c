@@ -26,6 +26,7 @@ typedef struct {
     const char *deviceId;
     const char *location;
     const char *sharedSecret;
+    int inactive;
 } t_device;
 
 typedef struct {
@@ -93,8 +94,13 @@ int initConfig(const char *configFilename, t_configHandle *configHandle) {
             logmsg(LOG_ERR, "Configured sharedsecret for device %d is too long", i);
             return -6;
         }
-        logmsg(LOG_INFO, "Device loaded: %d %s %s %s", i, 
+        if (! config_setting_lookup_bool(deviceConfig, "inactive", &(configHandle->devices[i].inactive))) {
+            logmsg(LOG_INFO, "no inactive flag set for device %d, consider as active", i);
+            configHandle->devices[i].inactive = 0;
+        }
+        logmsg(LOG_INFO, "Device loaded: %d %s %d %s %s", i, 
                configHandle->devices[i].deviceId, 
+               configHandle->devices[i].inactive,
                configHandle->devices[i].location, 
                configHandle->devices[i].sharedSecret);
     }
@@ -293,38 +299,42 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
            buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets,
            buf->s.version, location);
            
-    for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
-        uint64_t timestamp = buf->s.timestamp + j;
-        logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
-        
-        if ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) {
-            int frequency_before_point = buf->s.frequency[j] / 1000;
-            int frequency_behind_point = buf->s.frequency[j] - (frequency_before_point * 1000);
+    if (device->inactive == 0) {
+        for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
+            uint64_t timestamp = buf->s.timestamp + j;
+            logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
+            
+            if ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) {
+                int frequency_before_point = buf->s.frequency[j] / 1000;
+                int frequency_behind_point = buf->s.frequency[j] - (frequency_before_point * 1000);
 
-            char payload[256];
-            int res = snprintf(payload, sizeof(payload),
-                               "%s,valid=1,location=%s,host=%s freq=%d.%03d"
+                char payload[256];
+                int res = snprintf(payload, sizeof(payload),
+                                   "%s,valid=1,location=%s,host=%s freq=%d.%03d"
 #ifdef OpenBSD
-                               " %llu"
+                                   " %llu"
 #else
-                               " %lu"
+                                   " %lu"
 #endif                                                      
-                               "",
-                               handle->influxMeasurement, location, buf->s.deviceId, 
-                               frequency_before_point, frequency_behind_point, 
-                               timestamp);
-            if (res > sizeof(payload)) {
-                logmsg(LOG_ERR, "payload buffer to small");
-                return -1;
+                                   "",
+                                   handle->influxMeasurement, location, buf->s.deviceId, 
+                                   frequency_before_point, frequency_behind_point, 
+                                   timestamp);
+                if (res > sizeof(payload)) {
+                    logmsg(LOG_ERR, "payload buffer to small");
+                    return -1;
+                }
+                logmsg(LOG_DEBUG, "Payload: %s", payload);
+                res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
+                if (res == 0) {
+                    logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
+                }
+            } else {
+                logmsg(LOG_ERR, "%u out of bound, ignored", buf->s.frequency[j]);
             }
-            logmsg(LOG_DEBUG, "Payload: %s", payload);
-            res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
-            if (res == 0) {
-                logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
-            }
-        } else {
-            logmsg(LOG_ERR, "%u out of bound, ignored", buf->s.frequency[j]);
         }
+    } else {
+        logmsg(LOG_INFO, "Inactive device, not sent to InfluxDB");
     }
 
     logmsg(LOG_INFO, "Successfully sent whole minute to InfluxDB");
