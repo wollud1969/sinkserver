@@ -388,7 +388,13 @@ int sendToDB(t_forwarderHandle *handle, const char *location, const char *device
         char stmt[256];
         int res1 = snprintf(stmt, sizeof(stmt),
                             "INSERT INTO mainsfrequency (time, host, location, freq) "
-                            "VALUES(to_timestamp(%lu), '%s', '%s', %d.%03d)",
+                            "VALUES(to_timestamp("
+#ifdef OpenBSD
+                                                 "%llu"
+#else
+                                                 "%lu"
+#endif                                                      
+                                                       "), '%s', '%s', %d.%03d)",
                             timestamp, deviceId, location, 
                             frequency_before_point, frequency_behind_point);
         if (res1 > sizeof(stmt)) {

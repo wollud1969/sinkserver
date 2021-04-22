@@ -1,15 +1,14 @@
 BUILD_DIR = build
 
 C_SOURCES = \
-../cube/User/Src/sha256.c \
+sha256.c \
 sink20169.c \
 logging.c
 
 
 C_INCLUDES = \
 -I. \
--I../cube/User/Inc \
--I/usr/include/postgresql
+-I/usr/local/include/postgresql
 
 VERSION := $(shell git rev-parse --short=8 HEAD)
 
