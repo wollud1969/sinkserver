@@ -426,13 +426,14 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
            buf->s.deviceId, buf->s.totalRunningHours, buf->s.totalPowercycles, buf->s.totalWatchdogResets,
            buf->s.version, location);
            
+    int sendSuccess = 0;
     for (uint8_t j = 0; j < SECONDS_PER_MINUTE; j++) {
         uint64_t timestamp = buf->s.timestamp + j;
         logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
             
         if (device->inactive == 0) {
             if ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) {
-                sendToDB(handle, location, buf->s.deviceId, buf->s.frequency[j], timestamp);
+                sendSuccess += sendToDB(handle, location, buf->s.deviceId, buf->s.frequency[j], timestamp);
             } else {
                 logmsg(LOG_ERR, "%u out of bound, ignored", buf->s.frequency[j]);
             }
@@ -442,7 +443,11 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
     }
 
     if (device->inactive == 0) {
-        logmsg(LOG_INFO, "Successfully sent whole minute to database");
+        if (sendSuccess == 0) {
+            logmsg(LOG_INFO, "Successfully sent whole minute to database");
+        } else {
+            logmsg(LOG_INFO, "Errors when sending to database, see above");
+        }
     } else {
         logmsg(LOG_INFO, "Not sent to database, device is marked as inactive");
     }
