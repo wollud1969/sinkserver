@@ -27,7 +27,7 @@ Device Id and corresponding shared secret are provisioned into the devices, the 
 
 The sinkserver is deployed under the name `sink.hottis.de` and receives at UDP port 20169.
 
-Measurement is visualized at https://home.hottis.de/grafana/. 
+Measurement is visualized at https://grafana.mainscnt.eu. 
 
 The projects of the three current variants are at [RPi](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-rpi), [STM32](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32) and [ESP32](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-esp32).
 
