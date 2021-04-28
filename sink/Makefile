@@ -6,22 +6,14 @@ sink20169.c \
 logging.c
 
 
-C_INCLUDES = \
--I. \
-$(shell pkg-config --cflags-only-I libpq)
 
 VERSION := $(shell git rev-parse --short=8 HEAD)
+UNAME_S := $(shell uname -s)
 
 CC = gcc
-CFLAGS = $(C_INCLUDES) -Wall -Werror -std=c99 -DVERSION="\"$(VERSION)\""
-LDFLAGS = -lconfig -lpq
+CFLAGS = $(shell pkg-config --cflags libpq libconfig) -I. -Wall -Werror -std=c99 -D$(UNAME_S)=1 -DVERSION="\"$(VERSION)\""
+LDFLAGS = $(shell pkg-config --libs libpq libconfig)
 TARGET = sink20169
-
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),OpenBSD)
-  CFLAGS += -I/usr/local/include -DOpenBSD=1
-  LDFLAGS += -L/usr/local/lib
-endif
 
 all: $(BUILD_DIR)/$(TARGET)
 
