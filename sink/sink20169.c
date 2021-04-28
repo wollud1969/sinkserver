@@ -5,8 +5,6 @@
 
 #define _DEFAULT_SOURCE
 
-#define POSTGRESQL
-// #define INFLUXDB
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,17 +17,8 @@
 #include <string.h>
 #include <getopt.h>
 #include <pwd.h>
-
 #include <libconfig.h>
-
-#ifdef INFLUXDB
-#include <curl/curl.h>
-#endif
-
-#ifdef POSTGRESQL
 #include <libpq-fe.h>
-#endif
-
 #include <sinkStruct.h>
 #include <logging.h>
 #include <sha256.h>
@@ -55,30 +44,14 @@ typedef struct {
     int receiveSockFd;
 } t_receiverHandle;
 
-#ifdef POSTGRESQL
-    #define NUM_OF_STMT_PARAMS 4
-#endif 
-
+#define NUM_OF_STMT_PARAMS 4
 
 typedef struct {
     t_configHandle *configHandle;
     int32_t lowerBound;
     int32_t upperBound;
-
-#ifdef INFLUXDB 
-    const char *influxUser;
-    const char *influxPass;
-    const char *influxServer;
-    uint16_t influxPort;
-    const char *influxDatabase;
-    const char *influxMeasurement;
-    char influxUrl[1024];
-#endif
-
-#ifdef POSTGRESQL
     const char *postgresqlConnInfo;
     PGconn *conn;
-#endif
 } t_forwarderHandle;
 
 bool verbose = false;
@@ -234,51 +207,6 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
 int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
     handle->configHandle = configHandle;
 
-#ifdef INFLUXDB
-    handle->influxUser = NULL;
-    handle->influxPass = NULL;
-    handle->influxServer = NULL;
-    handle->influxDatabase = NULL;
-    handle->influxMeasurement = NULL;
-
-    config_lookup_string(&(configHandle->cfg), "influxUser", &(handle->influxUser));
-    config_lookup_string(&(configHandle->cfg), "influxPass", &(handle->influxPass));
-    config_lookup_string(&(configHandle->cfg), "influxServer", &(handle->influxServer));
-    config_lookup_string(&(configHandle->cfg), "influxDatabase", &(handle->influxDatabase));
-    config_lookup_string(&(configHandle->cfg), "influxMeasurement", &(handle->influxMeasurement));
-
-    int influxPort = 8086;
-    config_lookup_int(&(configHandle->cfg), "influxPort", &influxPort);
-    if (influxPort < 1 || influxPort > 65535) {
-        logmsg(LOG_ERR, "illegal influx port configured");
-        return -2;
-    }
-    handle->influxPort = influxPort;
-
-    if (! handle->influxServer) {
-        logmsg(LOG_ERR, "no influxServer configured");
-        return -1;
-    }
-    if (! handle->influxDatabase) {
-        logmsg(LOG_ERR, "no influxDatabase configured");
-        return -2;
-    }
-    if (! handle->influxMeasurement) {
-        logmsg(LOG_ERR, "no influxMeasurement configured");
-        return -3;
-    }
-
-    int res = snprintf(handle->influxUrl, sizeof(handle->influxUrl),
-                       "http://%s:%d/write?db=%s&precision=s",
-                       handle->influxServer, handle->influxPort, handle->influxDatabase);
-    if (res > sizeof(handle->influxUrl)) {
-        logmsg(LOG_ERR, "influxUrl has not enough space");
-        return -4;
-    }
-    logmsg(LOG_INFO, "influxUrl is %s", handle->influxUrl);
-#endif // INFLUXDB
-
-#ifdef POSTGRESQL
     handle->postgresqlConnInfo = NULL;
     config_lookup_string(&(configHandle->cfg), "postgresqlConnInfo", &(handle->postgresqlConnInfo));
     if (! handle->postgresqlConnInfo) {
@@ -287,7 +215,6 @@ int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
     }
 
     handle->conn = NULL;
-#endif // POSTGRESQL
 
     handle->lowerBound = 45000;
     config_lookup_int(&(configHandle->cfg), "lowerBound", &(handle->lowerBound));
@@ -302,64 +229,6 @@ void deinitForwarder(t_forwarderHandle *handle) {
 
 }
 
-#ifdef INFLUXDB
-int httpPostRequest(char *url, const char *user, const char *pass, char *payload) {
-    CURL *curl = curl_easy_init();
-    if (! curl) {
-        logmsg(LOG_ERR, "error instantiating curl");
-        return -1;
-    }
-
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    if (user && pass) {
-        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        curl_easy_setopt(curl, CURLOPT_USERNAME, user);
-        curl_easy_setopt(curl, CURLOPT_PASSWORD, pass);
-    }
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
-
-    CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
-        logmsg(LOG_ERR, "post request failed: %s", curl_easy_strerror(res));
-        return -2;
-    }
-
-    curl_easy_cleanup(curl);
-
-    return 0;
-}
-
-int sendToDB(t_forwarderHandle *handle, const char *location, const char *deviceId, 
-             uint32_t frequency, uint64_t timestamp) {
-    int frequency_before_point = frequency / 1000;
-    int frequency_behind_point = frequency - (frequency_before_point * 1000);
-    char payload[256];
-    int res = snprintf(payload, sizeof(payload),
-                       "%s,valid=1,location=%s,host=%s freq=%d.%03d"
-#ifdef OpenBSD
-                       " %llu"
-#else
-                       " %lu"
-#endif                                                      
-                       "",
-                       handle->influxMeasurement, location, deviceId, 
-                       frequency_before_point, frequency_behind_point, 
-                       timestamp);
-    if (res > sizeof(payload)) {
-        logmsg(LOG_ERR, "payload buffer to small");
-        return -1;
-    }
-    logmsg(LOG_DEBUG, "Payload: %s", payload);
-    res = httpPostRequest(handle->influxUrl, handle->influxUser, handle->influxPass, payload);
-    if (res == 0) {
-        logmsg(LOG_DEBUG, "Successfully sent to InfluxDB");
-    }
-    return res;
-}
-#endif // INFLUXDB
-
-
-#ifdef POSTGRESQL
 int openDatabaseConnection(t_forwarderHandle *handle) {
     int res = 0;
     
@@ -417,7 +286,6 @@ int sendToDB(t_forwarderHandle *handle, const char *location, const char *device
 
     return retcode;
 }
-#endif // POSTGRESQL
 
 
 int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
