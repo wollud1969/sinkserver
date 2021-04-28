@@ -8,7 +8,7 @@ logging.c
 
 C_INCLUDES = \
 -I. \
--I/usr/local/include/postgresql
+$(shell pkg-config --cflags-only-I libpq)
 
 VERSION := $(shell git rev-parse --short=8 HEAD)
 
