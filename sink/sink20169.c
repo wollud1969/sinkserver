@@ -329,11 +329,15 @@ int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
 }
 
 void usage() {
-    printf("sinkserver for mainsfrequency counter\n");
-    printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32\n");
+    printf("sinkserver for mainsfrequency counter implementations\n");
+    printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32,\n");
+    printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-esp32,\n");
+    printf("https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-rpi,\n");
+    printf("https://github.com/wollud1969/sinkConvert1\n");
+    printf("Repo: https://home.hottis.de/gitlab/wolutator/sinkserver\n");
     printf("Version: " VERSION "\n");
     printf("\nUsage\n");
-    printf("  -f FILENAME R..... Config file to be used\n");
+    printf("  -f FILENAME ...... Config file to be used\n");
     printf("  -v ............... Verbose, writes all logging on stdout too\n");
     printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
     printf("                     USER and DAEMON are supported\n");
