@@ -113,7 +113,8 @@ void deinitConfig(t_configHandle *configHandle) {
     }
 }
 
-t_device *findDevice(t_configHandle *configHandle, char *deviceId) {
+t_device *findDevice(t_commonHandle *handle, char *deviceId) {
+    t_configHandle *configHandle = handle->configHandle;
     for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
         if (! strcmp(configHandle->devices[i].deviceId, deviceId)) {
             return &(configHandle->devices[i]);
