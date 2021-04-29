@@ -151,7 +151,7 @@ t_device *findDevice(t_commonHandle *handle, char *deviceId) {
             if (execStatus != PGRES_TUPLES_OK) {
                 logmsg(LOG_INFO, "findDevice query fails, database returns %s", PQresStatus(execStatus));
             } else {
-                int ntuples = PQtuples(res2);
+                int ntuples = PQntuples(res2);
                 if (ntuples == 0) {
                     logmsg(LOG_ERR, "no device found");
                 } else if (ntuples == 1) {
