@@ -175,7 +175,7 @@ int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
         return -1;
     }
 
-    t_device *device = findDevice(handle->configHandle, buf->s.deviceId);    
+    t_device *device = findDevice(handle, buf->s.deviceId);    
     if (device == NULL) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
         return -4;
@@ -286,7 +286,7 @@ int sendToDB(t_commonHandle *handle, const char *location, const char *deviceId,
 
 
 int forwardMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
-    t_device *device = findDevice(handle->configHandle, buf->s.deviceId);
+    t_device *device = findDevice(handle, buf->s.deviceId);
     if (device == NULL) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
         return -4;
