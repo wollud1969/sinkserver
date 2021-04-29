@@ -39,20 +39,16 @@ typedef struct {
     t_device *devices;    
 } t_configHandle;
 
-typedef struct {
-    t_configHandle *configHandle;
-    int receiveSockFd;
-} t_receiverHandle;
-
 #define NUM_OF_STMT_PARAMS 4
 
 typedef struct {
     t_configHandle *configHandle;
+    int receiveSockFd;
     int32_t lowerBound;
     int32_t upperBound;
     const char *postgresqlConnInfo;
     PGconn *conn;
-} t_forwarderHandle;
+} t_commonHandle;
 
 bool verbose = false;
 
@@ -126,7 +122,7 @@ t_device *findDevice(t_configHandle *configHandle, char *deviceId) {
     return NULL;
 }
 
-int initReceiver(t_configHandle *configHandle, t_receiverHandle *handle) {
+int initReceiver(t_configHandle *configHandle, t_commonHandle *handle) {
     handle->configHandle = configHandle;
 
     struct sockaddr_in servaddr;
@@ -156,11 +152,11 @@ int initReceiver(t_configHandle *configHandle, t_receiverHandle *handle) {
     return 0;
 }
 
-void deinitReceiver(t_receiverHandle *handle) {
+void deinitReceiver(t_commonHandle *handle) {
     close(handle->receiveSockFd);
 }
 
-int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) {
+int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
     struct sockaddr_in cliaddr;
     socklen_t cliaddrlen = sizeof(cliaddr);
 
@@ -204,7 +200,7 @@ int receiveAndVerifyMinuteBuffer(t_receiverHandle *handle, t_minuteBuffer *buf) 
 }
 
 
-int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
+int initForwarder(t_configHandle *configHandle, t_commonHandle *handle) {
     handle->configHandle = configHandle;
 
     handle->postgresqlConnInfo = NULL;
@@ -225,11 +221,11 @@ int initForwarder(t_configHandle *configHandle, t_forwarderHandle *handle) {
     return 0;
 }
 
-void deinitForwarder(t_forwarderHandle *handle) {
+void deinitForwarder(t_commonHandle *handle) {
 
 }
 
-int openDatabaseConnection(t_forwarderHandle *handle) {
+int openDatabaseConnection(t_commonHandle *handle) {
     int res = 0;
     
     if (! handle->conn) {
@@ -248,7 +244,7 @@ int openDatabaseConnection(t_forwarderHandle *handle) {
     return res;
 }
 
-int sendToDB(t_forwarderHandle *handle, const char *location, const char *deviceId, 
+int sendToDB(t_commonHandle *handle, const char *location, const char *deviceId, 
              uint32_t frequency, uint64_t timestamp) {
     int retcode = 0;
     if (0 == openDatabaseConnection(handle)) {
@@ -288,7 +284,7 @@ int sendToDB(t_forwarderHandle *handle, const char *location, const char *device
 }
 
 
-int forwardMinuteBuffer(t_forwarderHandle *handle, t_minuteBuffer *buf) {
+int forwardMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
     t_device *device = findDevice(handle->configHandle, buf->s.deviceId);
     if (device == NULL) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
@@ -349,8 +345,7 @@ void usage() {
 
 int main(int argc, char **argv) {
     t_configHandle configHandle;
-    t_forwarderHandle forwarderHandle;
-    t_receiverHandle receiverHandle;
+    t_commonHandle commonHandle;
 
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
@@ -415,12 +410,12 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (0 != initReceiver(&configHandle, &receiverHandle)) {
+    if (0 != initReceiver(&configHandle, &commonHandle)) {
         logmsg(LOG_ERR, "error when initializing receiver");
         exit(5);
     }
 
-    if (0 != initForwarder(&configHandle, &forwarderHandle)) {
+    if (0 != initForwarder(&configHandle, &commonHandle)) {
         logmsg(LOG_ERR, "error when initializing forwarder");
         exit(6);
     }
@@ -429,18 +424,18 @@ int main(int argc, char **argv) {
     while (1) {
         t_minuteBuffer buf;
         
-        if (receiveAndVerifyMinuteBuffer(&receiverHandle, &buf) < 0) {
+        if (receiveAndVerifyMinuteBuffer(&commonHandle, &buf) < 0) {
             logmsg(LOG_ERR, "error in receiveAndVerify");
             continue;
         }
 
-        if (forwardMinuteBuffer(&forwarderHandle, &buf) < 0) {
+        if (forwardMinuteBuffer(&commonHandle, &buf) < 0) {
             logmsg(LOG_ERR, "error in send");
         }
     }
 
 
-    deinitForwarder(&forwarderHandle);
-    deinitReceiver(&receiverHandle);
+    deinitForwarder(&commonHandle);
+    deinitReceiver(&commonHandle);
     deinitConfig(&configHandle);
 }
