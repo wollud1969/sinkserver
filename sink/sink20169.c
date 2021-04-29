@@ -76,9 +76,6 @@ int openDatabaseConnection(t_commonHandle *handle) {
 }
 
 int initConfig(const char *configFilename, t_configHandle *configHandle) {
-    configHandle->numOfDevices = 0;
-    configHandle->devices = NULL;
-
     config_init(&(configHandle->cfg));
     if (! config_read_file(&(configHandle->cfg), configFilename)) {
         logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
@@ -88,51 +85,11 @@ int initConfig(const char *configFilename, t_configHandle *configHandle) {
         return -1;
     }
 
-    config_setting_t *devicesConfig = config_lookup(&(configHandle->cfg), "devices");
-    if (devicesConfig == NULL) {
-        logmsg(LOG_ERR, "receiver: no devices configuration found");
-        return -2;
-    }
-    configHandle->numOfDevices = config_setting_length(devicesConfig);
-    configHandle->devices = (t_device*) malloc(configHandle->numOfDevices * sizeof(t_device));
-    for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
-        config_setting_t *deviceConfig = config_setting_get_elem(devicesConfig, i);
-        if (! config_setting_lookup_string(deviceConfig, "deviceId", &(configHandle->devices[i].deviceId))) {
-            logmsg(LOG_ERR, "no deviceId for device %d", i);
-            return -3;
-        }
-        if (! config_setting_lookup_string(deviceConfig, "location", &(configHandle->devices[i].location))) {
-            logmsg(LOG_ERR, "no location for device %d", i);
-            return -4;
-        }
-        if (! config_setting_lookup_string(deviceConfig, "sharedSecret", &(configHandle->devices[i].sharedSecret))) {
-            logmsg(LOG_ERR, "no sharedSecret for device %d", i);
-            return -5;
-        }
-        if (strlen(configHandle->devices[i].sharedSecret) >= SHA256_BLOCK_SIZE) {
-            logmsg(LOG_ERR, "Configured sharedsecret for device %d is too long", i);
-            return -6;
-        }
-        if (! config_setting_lookup_bool(deviceConfig, "inactive", &(configHandle->devices[i].inactive))) {
-            logmsg(LOG_INFO, "no inactive flag set for device %d, consider as active", i);
-            configHandle->devices[i].inactive = 0;
-        }
-        logmsg(LOG_INFO, "Device loaded: %d %s %d %s %s", i, 
-               configHandle->devices[i].deviceId, 
-               configHandle->devices[i].inactive,
-               configHandle->devices[i].location, 
-               configHandle->devices[i].sharedSecret);
-    }
-
     return 0;
 }
 
 void deinitConfig(t_configHandle *configHandle) {
     config_destroy(&(configHandle->cfg));
-    if (configHandle->devices) {
-        free(configHandle->devices);
-        configHandle->devices = NULL;
-    }
 }
 
 // When you got a result here, remember to free it using freeDevice
