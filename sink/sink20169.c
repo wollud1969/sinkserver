@@ -148,15 +148,17 @@ t_device *findDevice(t_commonHandle *handle, char *deviceId) {
             logmsg(LOG_DEBUG, "Statement: %s", stmt);
             PGresult *res2 = PQexec(handle->conn, stmt);
             ExecStatusType execStatus = PQresultStatus(res2);
-            switch(execStatus) {
-                case PGRES_COMMAND_OK:
-                    logmsg(LOG_INFO, "findDevice select returns PGRES_COMMAND_OK");
-                    break;
-                case PGRES_TUPLES_OK:
-                    logmsg(LOG_INFO, "findDevice select returns PGRES_TUPLES_OK");
-                    break;
-                default:
-                    logmsg(LOG_INFO, "findDevice select returns something else: %s", PQresStatus(execStatus));
+            if (execStatus != PGRES_TUPLES_OK) {
+                logmsg(LOG_INFO, "findDevice query fails, database returns %s", PQresStatus(execStatus));
+            } else {
+                int ntuples = PQtuples(res2);
+                if (ntuples == 0) {
+                    logmsg(LOG_ERR, "no device found");
+                } else if (ntuples == 1) {
+                    logmsg(LOG_DEBUG, "device found");
+                } else {
+                    logmsg(LOG_ERR, "strange number of devices found: %d", ntuples);
+                }
             }
             PQclear(res2);
         }
