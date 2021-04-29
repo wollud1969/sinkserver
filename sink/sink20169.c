@@ -155,7 +155,7 @@ t_device *findDevice(t_commonHandle *handle, char *deviceId) {
                 if (ntuples == 1) {
                     logmsg(LOG_DEBUG, "device found");
                     char *sharedsecret = PQgetvalue(res2, 0, 0);
-                    char *active = PGgetvalue(res2, 0, 1);
+                    char *active = PQgetvalue(res2, 0, 1);
                     logmsg(LOG_DEBUG, "found sharedsecret is %s, active is %d", sharedsecret, active[0]);
                 } else {
                     logmsg(LOG_ERR, "no device found");
