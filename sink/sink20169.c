@@ -31,6 +31,7 @@ typedef struct {
     const char *location;
     const char *sharedSecret;
     int inactive;
+    PGresult *deviceResult;
 } t_device;
 
 typedef struct {
@@ -48,6 +49,7 @@ typedef struct {
     int32_t upperBound;
     const char *postgresqlConnInfo;
     PGconn *conn;
+    t_device foundDevice;
 } t_commonHandle;
 
 bool verbose = false;
@@ -133,50 +135,66 @@ void deinitConfig(t_configHandle *configHandle) {
     }
 }
 
-t_device *findDevice(t_commonHandle *handle, char *deviceId) {
-    t_device *foundDevice = NULL;
+// When you got a result here, remember to free it using freeDevice
+int findDevice(t_commonHandle *handle, char *deviceId) {
+    int retCode = 0;
+
+    // we already have found it
+    if (handle->foundDevice.deviceResult) {
+        return 0;
+    }
+
     if (0 == openDatabaseConnection(handle)) {
         char stmt[256];
         int res1 = snprintf(stmt, sizeof(stmt),
-                            "SELECT sharedsecret, active "
+                            "SELECT sharedsecret, active, location "
                             "  FROM device_t "
                             "  WHERE deviceid = '%s'",
                             deviceId);
         if (res1 > sizeof(stmt)) {
             logmsg(LOG_ERR, "stmt buffer to small");
+            retCode = -1;
         } else {
             logmsg(LOG_DEBUG, "Statement: %s", stmt);
             PGresult *res2 = PQexec(handle->conn, stmt);
             ExecStatusType execStatus = PQresultStatus(res2);
             if (execStatus != PGRES_TUPLES_OK) {
                 logmsg(LOG_INFO, "findDevice query fails, database returns %s", PQresStatus(execStatus));
+                retCode = -2;
             } else {
                 int ntuples = PQntuples(res2);
                 if (ntuples == 1) {
                     logmsg(LOG_DEBUG, "device found");
-                    char *sharedsecret = PQgetvalue(res2, 0, 0);
-                    char *active = PQgetvalue(res2, 0, 1);
-                    logmsg(LOG_DEBUG, "found sharedsecret is %s, active is %s", sharedsecret, active);
+                    handle->foundDevice.deviceResult = res2;
+                    handle->foundDevice.sharedSecret = PQgetvalue(res2, 0, 0);
+                    handle->foundDevice.inactive = (strcmp(PQgetvalue(res2, 0, 1), "f") == 0);
+                    handle->foundDevice.location = PQgetvalue(res2, 0, 2);
+                    logmsg(LOG_DEBUG, "found sharedsecret is %s, inactive is %d, location is %s", 
+                           handle->foundDevice.sharedSecret, handle->foundDevice.inactive,
+                           handle->foundDevice.location);
                 } else {
                     logmsg(LOG_ERR, "no device found");
+                    PQclear(res2);
+                    retCode = -3;
                 }
             }
-            PQclear(res2);
         }
     } else {
         logmsg(LOG_ERR, "No database connection available, data lost");
+        retCode = -4;
     } 
+    
+    return retCode;
+}
 
-
-
-    t_configHandle *configHandle = handle->configHandle;
-    for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
-        if (! strcmp(configHandle->devices[i].deviceId, deviceId)) {
-            foundDevice = &(configHandle->devices[i]);
-            break;
-        }
+void freeDevice(t_commonHandle *handle) {
+    if (handle->foundDevice.deviceResult) {
+        PQclear(handle->foundDevice.deviceResult);
+        handle->foundDevice.deviceResult = NULL;
+        handle->foundDevice.deviceId = NULL;
+        handle->foundDevice.sharedSecret = NULL;
+        handle->foundDevice.location = NULL;
     }
-    return foundDevice;
 }
 
 int initReceiver(t_configHandle *configHandle, t_commonHandle *handle) {
@@ -231,12 +249,11 @@ int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
         return -1;
     }
 
-    t_device *device = findDevice(handle, buf->s.deviceId);    
-    if (device == NULL) {
+    if (0 != findDevice(handle, buf->s.deviceId)) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
         return -4;
     }
-    const char *sharedSecret = device->sharedSecret;
+    char *sharedSecret = handle->foundDevice.sharedSecret;
 
     uint8_t receivedHash[SHA256_BLOCK_SIZE];
     memcpy(receivedHash, buf->s.hash, SHA256_BLOCK_SIZE);
@@ -323,11 +340,11 @@ int sendToDB(t_commonHandle *handle, const char *location, const char *deviceId,
 
 
 int forwardMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
-    t_device *device = findDevice(handle, buf->s.deviceId);
-    if (device == NULL) {
+    if (0 != findDevice(handle, buf->s.deviceId)) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
         return -4;
     }
+    t_device *device = &(handle->foundDevice);
     const char *location = device->location;
 
     logmsg(LOG_INFO, "D: %s, R: %u, P: %u, W: %u, V: %08x, L: %s", 
@@ -384,6 +401,7 @@ void usage() {
 int main(int argc, char **argv) {
     t_configHandle configHandle;
     t_commonHandle commonHandle;
+    commonHandle.foundDevice.deviceResult = NULL;
 
 
     const char *configFilename = DEFAULT_CONFIG_FILENAME;
@@ -461,7 +479,11 @@ int main(int argc, char **argv) {
 
     while (1) {
         t_minuteBuffer buf;
-        
+
+        // this is relevant AFTER one or both of the following calls,
+        // is has an effect first in the second cycle through the loop
+        freeDevice(&commonHandle);
+
         if (receiveAndVerifyMinuteBuffer(&commonHandle, &buf) < 0) {
             logmsg(LOG_ERR, "error in receiveAndVerify");
             continue;
