@@ -222,7 +222,7 @@ int initForwarder(t_configHandle *configHandle, t_commonHandle *handle) {
 }
 
 void deinitForwarder(t_commonHandle *handle) {
-
+    PQfinish(handle->conn);
 }
 
 int openDatabaseConnection(t_commonHandle *handle) {
