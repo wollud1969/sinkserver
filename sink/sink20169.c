@@ -116,12 +116,11 @@ int findDevice(t_commonHandle *handle, char *deviceId) {
             PGresult *res2 = PQexec(handle->conn, stmt);
             ExecStatusType execStatus = PQresultStatus(res2);
             if (execStatus != PGRES_TUPLES_OK) {
-                logmsg(LOG_INFO, "findDevice query fails, database returns %s", PQresStatus(execStatus));
+                logmsg(LOG_ERR, "findDevice query fails, database returns %s", PQresStatus(execStatus));
                 retCode = -2;
             } else {
                 int ntuples = PQntuples(res2);
                 if (ntuples == 1) {
-                    logmsg(LOG_DEBUG, "device found");
                     handle->foundDevice.deviceResult = res2;
                     handle->foundDevice.sharedSecret = PQgetvalue(res2, 0, 0);
                     handle->foundDevice.inactive = (strcmp(PQgetvalue(res2, 0, 1), "f") == 0);
