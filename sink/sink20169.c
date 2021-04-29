@@ -148,7 +148,7 @@ t_device *findDevice(t_commonHandle *handle, char *deviceId) {
             logmsg(LOG_DEBUG, "Statement: %s", stmt);
             PGresult *res2 = PQexec(handle->conn, stmt);
             ExecStatusType execStatus = PQresultStatus(res2);
-            switch(PQresultStatus(execStatus)) {
+            switch(execStatus) {
                 case PGRES_COMMAND_OK:
                     logmsg(LOG_INFO, "findDevice select returns PGRES_COMMAND_OK");
                     break;
