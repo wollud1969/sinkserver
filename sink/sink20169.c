@@ -53,6 +53,26 @@ typedef struct {
 bool verbose = false;
 
 
+
+int openDatabaseConnection(t_commonHandle *handle) {
+    int res = 0;
+    
+    if (! handle->conn) {
+        logmsg(LOG_DEBUG, "Opening connection to database");
+        handle->conn = PQconnectdb(handle->postgresqlConnInfo);
+    } else if (PQstatus(handle->conn) != CONNECTION_OK) {
+        logmsg(LOG_DEBUG, "Resetting connection to database");
+        PQreset(handle->conn);
+    }
+
+    if (PQstatus(handle->conn) != CONNECTION_OK) {
+        logmsg(LOG_ERR, "Connection to database failed: %s", PQerrorMessage(handle->conn));
+        res = -1;
+    }
+
+    return res;
+}
+
 int initConfig(const char *configFilename, t_configHandle *configHandle) {
     configHandle->numOfDevices = 0;
     configHandle->devices = NULL;
@@ -114,13 +134,46 @@ void deinitConfig(t_configHandle *configHandle) {
 }
 
 t_device *findDevice(t_commonHandle *handle, char *deviceId) {
+    t_device *foundDevice = NULL;
+    if (0 == openDatabaseConnection(handle)) {
+        char stmt[256];
+        int res1 = snprintf(stmt, sizeof(stmt),
+                            "SELECT sharedsecret, active "
+                            "  FROM device_t "
+                            "  WHERE deviceid = '%s'",
+                            deviceId);
+        if (res1 > sizeof(stmt)) {
+            logmsg(LOG_ERR, "stmt buffer to small");
+        } else {
+            logmsg(LOG_DEBUG, "Statement: %s", stmt);
+            PGresult *res2 = PQexec(handle->conn, stmt);
+            ExecStatusType execStatus = PQresultStatus(res2);
+            switch(PQresultStatus(execStatus)) {
+                case PGRES_COMMAND_OK:
+                    logmsg(LOG_INFO, "findDevice select returns PGRES_COMMAND_OK");
+                    break;
+                case PGRES_TUPLES_OK:
+                    logmsg(LOG_INFO, "findDevice select returns PGRES_TUPLES_OK");
+                    break;
+                default:
+                    logmsg(LOG_INFO, "findDevice select returns something else: %s", PQresStatus(execStatus));
+            }
+            PQclear(res2);
+        }
+    } else {
+        logmsg(LOG_ERR, "No database connection available, data lost");
+    } 
+
+
+
     t_configHandle *configHandle = handle->configHandle;
     for (uint16_t i = 0; i < configHandle->numOfDevices; i++) {
         if (! strcmp(configHandle->devices[i].deviceId, deviceId)) {
-            return &(configHandle->devices[i]);
+            foundDevice = &(configHandle->devices[i]);
+            break;
         }
     }
-    return NULL;
+    return foundDevice;
 }
 
 int initReceiver(t_configHandle *configHandle, t_commonHandle *handle) {
@@ -224,25 +277,6 @@ int initForwarder(t_configHandle *configHandle, t_commonHandle *handle) {
 
 void deinitForwarder(t_commonHandle *handle) {
     PQfinish(handle->conn);
-}
-
-int openDatabaseConnection(t_commonHandle *handle) {
-    int res = 0;
-    
-    if (! handle->conn) {
-        logmsg(LOG_DEBUG, "Opening connection to database");
-        handle->conn = PQconnectdb(handle->postgresqlConnInfo);
-    } else if (PQstatus(handle->conn) != CONNECTION_OK) {
-        logmsg(LOG_DEBUG, "Resetting connection to database");
-        PQreset(handle->conn);
-    }
-
-    if (PQstatus(handle->conn) != CONNECTION_OK) {
-        logmsg(LOG_ERR, "Connection to database failed: %s", PQerrorMessage(handle->conn));
-        res = -1;
-    }
-
-    return res;
 }
 
 int sendToDB(t_commonHandle *handle, const char *location, const char *deviceId, 
