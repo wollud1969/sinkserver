@@ -152,12 +152,12 @@ t_device *findDevice(t_commonHandle *handle, char *deviceId) {
                 logmsg(LOG_INFO, "findDevice query fails, database returns %s", PQresStatus(execStatus));
             } else {
                 int ntuples = PQntuples(res2);
-                if (ntuples == 0) {
-                    logmsg(LOG_ERR, "no device found");
-                } else if (ntuples == 1) {
+                if (ntuples == 1) {
                     logmsg(LOG_DEBUG, "device found");
+                    char *sharedsecret = PQgetvalue(res2, 0, 0);
+                    logmsg(LOG_DEBUG, "found sharedsecret is %s", sharedsecret);
                 } else {
-                    logmsg(LOG_ERR, "strange number of devices found: %d", ntuples);
+                    logmsg(LOG_ERR, "no device found");
                 }
             }
             PQclear(res2);
