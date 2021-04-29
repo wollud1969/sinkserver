@@ -194,6 +194,7 @@ void freeDevice(t_commonHandle *handle) {
         handle->foundDevice.deviceId = NULL;
         handle->foundDevice.sharedSecret = NULL;
         handle->foundDevice.location = NULL;
+        logmsg(LOG_DEBUG, "device has been free");
     }
 }
 
@@ -253,7 +254,7 @@ int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
         logmsg(LOG_ERR, "Device %s not found", buf->s.deviceId);
         return -4;
     }
-    char *sharedSecret = handle->foundDevice.sharedSecret;
+    const char *sharedSecret = handle->foundDevice.sharedSecret;
 
     uint8_t receivedHash[SHA256_BLOCK_SIZE];
     memcpy(receivedHash, buf->s.hash, SHA256_BLOCK_SIZE);
