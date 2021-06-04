@@ -257,22 +257,22 @@ void deinitForwarder(t_commonHandle *handle) {
 }
 
 int sendToDB(t_commonHandle *handle, const char *location, const char *deviceId, 
-             uint32_t frequency, uint64_t timestamp) {
+             uint32_t frequency, uint8_t valid, uint64_t timestamp) {
     int retcode = 0;
     if (0 == openDatabaseConnection(handle)) {
         int frequency_before_point = frequency / 1000;
         int frequency_behind_point = frequency - (frequency_before_point * 1000);
         char stmt[256];
         int res1 = snprintf(stmt, sizeof(stmt),
-                            "INSERT INTO mainsfrequency (time, host, location, freq) "
+                            "INSERT INTO mainsfrequency (time, host, location, valid, freq) "
                             "VALUES(to_timestamp("
 #ifdef OpenBSD
                                                  "%llu"
 #else
                                                  "%lu"
 #endif                                                      
-                                                       "), '%s', '%s', %d.%03d)",
-                            timestamp, deviceId, location, 
+                                                       "), '%s', '%s', %d, %d.%03d)",
+                            timestamp, deviceId, location, valid,
                             frequency_before_point, frequency_behind_point);
         if (res1 > sizeof(stmt)) {
             logmsg(LOG_ERR, "stmt buffer to small");
@@ -314,11 +314,11 @@ int forwardMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
         logmsg(LOG_DEBUG, "Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
             
         if (device->inactive == 0) {
-            if ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) {
-                sendSuccess += sendToDB(handle, location, buf->s.deviceId, buf->s.frequency[j], timestamp);
-            } else {
-                logmsg(LOG_ERR, "%u out of bound, ignored", buf->s.frequency[j]);
+            uint8_t valid = ((buf->s.frequency[j] >= handle->lowerBound) && (buf->s.frequency[j] <= handle->upperBound)) ? 1 : 0;
+            if (valid == 0) {
+                logmsg(LOG_INFO, "Out of range: Time: %lu, Frequency: %u", timestamp, buf->s.frequency[j]);
             }
+            sendSuccess += sendToDB(handle, location, buf->s.deviceId, buf->s.frequency[j], valid, timestamp);
         } else {
             logmsg(LOG_DEBUG, "Inactive device, not sent to database");
         }
