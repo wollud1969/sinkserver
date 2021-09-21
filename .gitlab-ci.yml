@@ -1,0 +1,5 @@
+include:
+    - project: dockerized/commons
+      ref: master
+      file: gitlab-ci-template.yml
+
