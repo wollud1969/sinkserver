@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
     bool doFork = false;
 
     int c;
-    while ((c = getopt(argc, argv, "f:vs:hn:b")) != -1) {
+    while ((c = getopt(argc, argv, "f:vds:hn:b")) != -1) {
         switch (c) {
             case 'f':
                 configFilename = strdup(optarg);

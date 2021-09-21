@@ -23,5 +23,14 @@ deploy:
     script:
         - docker stop $CONTAINER_NAME || echo "container not running, never mind"
         - docker rm $CONTAINER_NAME || echo "container not existing, never mind"
-        - docker run -d --network docker-server --ip 172.16.10.42 -v sink_config:/etc/sink --name $CONTAINER_NAME --restart always $IMAGE_NAME:$CI_COMMIT_TAG
+        - docker run 
+          -d 
+          --network docker-server 
+          --ip 172.16.10.42 
+          -v sink_config:/etc/sink 
+          --name $CONTAINER_NAME 
+          --restart always 
+          $IMAGE_NAME:$CI_COMMIT_TAG
+    environment:
+        name: production
 
