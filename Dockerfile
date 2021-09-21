@@ -1,6 +1,6 @@
 FROM alpine:3.13 AS builder
 
-ARG VERSION
+ARG VERSION ${CI_COMMIT_SHORT_SHA}
 
 COPY sink/ /tmp/sink
 
