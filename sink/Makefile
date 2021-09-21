@@ -5,7 +5,7 @@ sha256.c \
 sink20169.c \
 logging.c
 
-VERSION := $(shell git rev-parse --short=8 HEAD)
+VERSION ?= $(shell git rev-parse --short=8 HEAD)
 UNAME_S := $(shell uname -s)
 
 CC = gcc

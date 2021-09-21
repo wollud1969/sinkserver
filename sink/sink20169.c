@@ -53,7 +53,7 @@ typedef struct {
 } t_commonHandle;
 
 bool verbose = false;
-
+bool debug = false;
 
 
 int openDatabaseConnection(t_commonHandle *handle) {
@@ -347,6 +347,7 @@ void usage() {
     printf("\nUsage\n");
     printf("  -f FILENAME ...... Config file to be used\n");
     printf("  -v ............... Verbose, writes all logging on stdout too\n");
+    printf("  -d ............... Also log debug output\n");
     printf("  -s FACILITY ...... Sets syslog facility, only LOCAL[0..7]\n");
     printf("                     USER and DAEMON are supported\n");
     printf("  -n USER .......... If started as root drop privileges and become\n");
@@ -373,6 +374,9 @@ int main(int argc, char **argv) {
                 break;
             case 'v':
                 verbose = true;
+                break;
+            case 'd':
+                debug = true;
                 break;
             case 's':
                 setfacility(optarg);

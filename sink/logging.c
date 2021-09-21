@@ -7,6 +7,8 @@
 #include <string.h>
 
 extern bool verbose;
+extern bool debug;
+
 int facility = LOG_LOCAL0;
 
 void setfacility(const char *facility_p) {
@@ -42,7 +44,7 @@ void logmsg(int prio, const char* format, ...) {
   vsnprintf(buf, sizeof(buf), format, vl);
   va_end(vl);
 
-  if (verbose) {
+  if (verbose && (debug || (prio != LOG_DEBUG))) {
     printf("%s\n", buf);
   }
 
