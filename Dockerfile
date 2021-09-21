@@ -1,6 +1,6 @@
 FROM alpine:3.13 AS builder
 
-ARG VERSION=${CI_COMMIT_SHORT_SHA}
+ARG VERSION="dockerized"
 
 COPY sink/ /tmp/sink
 
