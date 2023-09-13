@@ -32,3 +32,4 @@ Measurement is visualized at https://grafana.mainscnt.eu.
 The projects of the three current variants are at [RPi](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-rpi), [STM32](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-stm32) and [ESP32](https://home.hottis.de/gitlab/wolutator/mains-frequency-counter-esp32).
 
 
+

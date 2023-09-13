@@ -1,4 +1,4 @@
-FROM alpine:3.13 AS builder
+FROM alpine:3.18.3 AS builder
 
 ARG VERSION="dockerized"
 
@@ -13,7 +13,7 @@ RUN \
   make VERSION=${VERSION}
 
 
-FROM alpine:3.13
+FROM alpine:3.18.3
 
 COPY --from=builder /tmp/sink/build/sink20169 /usr/local/bin/
 

@@ -6,5 +6,6 @@ cube/pubsubc.a
 test
 .bash_history
 .vscode
-
+.dccache
+sink/.dccache
 
