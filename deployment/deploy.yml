@@ -27,8 +27,6 @@ spec:
                 configMapKeyRef:
                   name: sinkserver-config
                   key: dbhost
-            - name: PGSSLMODE
-              value: "disable"
             - name: PGPASSWORD
               valueFrom:
                 secretKeyRef:
