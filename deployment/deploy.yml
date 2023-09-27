@@ -15,9 +15,11 @@ spec:
       labels:
         app: sinkserver
     spec:
+      imagePullSecrets:
+        - name: hottis-registry-creds
       containers:
         - name: sinkserver
-          image: registry.hottis.de/mainscnt/sinkserver:828dffd5
+          image: registry.hottis.de/mainscnt/sinkserver:314b9a42
           ports:
             - containerPort: 20169
               protocol: UDP
@@ -32,5 +34,21 @@ spec:
                 secretKeyRef:
                   name: sinkserver-secret
                   key: dbpass
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sinkserver
+  labels:
+    app: sinkserver
+spec:
+  type: LoadBalancer
+  selector:
+    app: sinkserver
+  ports:
+    - protocol: UDP
+      port: 20169
+      targetPort: 20169
+
 
 
