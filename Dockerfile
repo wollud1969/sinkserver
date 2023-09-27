@@ -27,8 +27,7 @@ COPY --from=builder /tmp/sink/build/sink20169 /usr/local/bin/
 
 RUN \
   apk add --no-cache libpq && \
-  apk add --no-cache libconfig && \
-  mkdir /etc/sink
+  apk add --no-cache libconfig 
 
 EXPOSE 20169/udp
 USER nobody
