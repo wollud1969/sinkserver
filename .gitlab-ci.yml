@@ -26,29 +26,29 @@ build:
         - docker push ${HUB_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
 
 
-deploy:
-    image: registry.hottis.de/dockerized/docker-bash:latest
-    stage: deploy
-    tags:
-        - hottis
-        - linux
-        - docker
-    only:
-        - tags
-    variables:
-        GIT_STRATEGY: none
-        CONTAINER_NAME: sink
-    script:
-        - docker stop $CONTAINER_NAME || echo "container not running, never mind"
-        - docker rm $CONTAINER_NAME || echo "container not existing, never mind"
-        - docker run 
-          -d 
-          --network docker-server 
-          --ip 172.16.10.42 
-          -v sink_config:/etc/sink 
-          --name $CONTAINER_NAME 
-          --restart always 
-          $IMAGE_NAME:$CI_COMMIT_TAG
-    environment:
-        name: production
+# deploy:
+#    image: registry.hottis.de/dockerized/docker-bash:latest
+#    stage: deploy
+#    tags:
+#        - hottis
+#        - linux
+#        - docker
+#    only:
+#        - tags
+#    variables:
+#        GIT_STRATEGY: none
+#        CONTAINER_NAME: sink
+#    script:
+#        - docker stop $CONTAINER_NAME || echo "container not running, never mind"
+#        - docker rm $CONTAINER_NAME || echo "container not existing, never mind"
+#        - docker run 
+#          -d 
+#          --network docker-server 
+#          --ip 172.16.10.42 
+#          -v sink_config:/etc/sink 
+#          --name $CONTAINER_NAME 
+#          --restart always 
+#          $IMAGE_NAME:$CI_COMMIT_TAG
+#    environment:
+#        name: production
 
