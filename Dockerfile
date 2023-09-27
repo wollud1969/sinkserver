@@ -32,9 +32,7 @@ RUN \
 
 EXPOSE 20169/udp
 
-VOLUME /etc/sink
-
-CMD [ "/usr/local/bin/sink20169", "-f", "/etc/sink/sink20169.cfg", "-n", "nobody", "-v" ]
+CMD [ "/usr/local/bin/sink20169", "-n", "nobody", "-v" ]
 
   
 
