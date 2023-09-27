@@ -1,12 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  namespace: mainscnt
+  name: deny-all-but-dns
+spec:
+  podSelector:
+    matchLabels: {}
+  policyTypes:
+    - Egress
+    - Ingress
+  egress:
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sinkserver
+  namespace: mainscnt
   labels:
     app: sinkserver
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: sinkserver
@@ -15,11 +37,9 @@ spec:
       labels:
         app: sinkserver
     spec:
-      imagePullSecrets:
-        - name: hottis-registry-creds
       containers:
         - name: sinkserver
-          image: registry.hottis.de/mainscnt/sinkserver:314b9a42
+          image: wollud1969/sinkserver:e5f9d3e3
           ports:
             - containerPort: 20169
               protocol: UDP
@@ -39,6 +59,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sinkserver
+  namespace: mainscnt
   labels:
     app: sinkserver
 spec:
@@ -49,6 +70,72 @@ spec:
     - protocol: UDP
       port: 20169
       targetPort: 20169
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-database-sinkserver
+  namespace: database
+spec:
+  podSelector:
+    matchLabels:
+      app: timescaledb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: sinkserver
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: mainscnt
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sinkserver-database
+  namespace: mainscnt
+spec:
+  podSelector:
+    matchLabels:
+      app: sinkserver
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+      - podSelector:
+          matchLabels:
+            app: timescaledb
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: database
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-sinkserver-ingress
+  namespace: mainscnt
+spec:
+  podSelector:
+    matchLabels:
+      app: sinkserver
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+      ports:
+        - protocol: UDP
+          port: 20169
+
 
 
 

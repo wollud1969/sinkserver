@@ -32,7 +32,7 @@ RUN \
 EXPOSE 20169/udp
 USER nobody
 
-CMD [ "/usr/local/bin/sink20169", "-v" ]
+CMD [ "/usr/local/bin/sink20169", "-v", "-d" ]
 
   
 
