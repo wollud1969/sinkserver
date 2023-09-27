@@ -202,9 +202,9 @@ int initForwarder(t_commonHandle *handle) {
     handle->conn = NULL;
 
     char *lowerBoundStr = getenv("LOWER_BOUND");
-    handle->lowerBound = lowerBoundStr ? strtol(lowerBoundStr, NULL, 10) : 45000
+    handle->lowerBound = lowerBoundStr ? strtol(lowerBoundStr, NULL, 10) : 45000;
     char *upperBoundStr = getenv("UPPER_BOUND");
-    handle->upperBound = upperBoundStr ? strtol(upperBoundStr, NULL, 10) : 55000
+    handle->upperBound = upperBoundStr ? strtol(upperBoundStr, NULL, 10) : 55000;
     logmsg(LOG_INFO, "lowerBound: %u, upperBound: %u", handle->lowerBound, handle->upperBound);
 
     return 0;
