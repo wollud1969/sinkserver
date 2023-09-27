@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sinkserver
+  labels:
+    app: sinkserver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sinkserver
+  template:
+    metadata:
+      labels:
+        app: sinkserver
+    spec:
+      containers:
+        - name: sinkserver
+          image: registry.hottis.de/mainscnt/sinkserver:828dffd5
+          ports:
+            - containerPort: 20169
+              protocol: UDP
+          env:
+            - name: PGHOST
+              valueFrom: 
+                configMapKeyRef:
+                  name: sinkserver-config
+                  key: dbhost
+            - name: PGSSLMODE
+              value: "disable"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sinkserver-secret
+                  key: dbpass
+
+

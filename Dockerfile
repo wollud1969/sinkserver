@@ -20,6 +20,8 @@ ENV PGDATABASE="mainscnt"
 ENV PGUSER="sink"
 ENV PGPASSWORD=""
 ENV PGSSLMODE="require"
+ENV LOWER_BOUND="44000"
+ENV UPPER_BOUND="56000"
 
 COPY --from=builder /tmp/sink/build/sink20169 /usr/local/bin/
 

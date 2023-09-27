@@ -17,14 +17,12 @@
 #include <string.h>
 #include <getopt.h>
 #include <pwd.h>
-#include <libconfig.h>
 #include <libpq-fe.h>
 #include <sinkStruct.h>
 #include <logging.h>
 #include <sha256.h>
 
 
-const char DEFAULT_CONFIG_FILENAME[] = "./sink20169.cfg";
 
 typedef struct {
     const char *deviceId;
@@ -34,16 +32,9 @@ typedef struct {
     PGresult *deviceResult;
 } t_device;
 
-typedef struct {
-    config_t cfg;
-    uint16_t numOfDevices;
-    t_device *devices;    
-} t_configHandle;
-
 #define NUM_OF_STMT_PARAMS 4
 
 typedef struct {
-    t_configHandle *configHandle;
     int receiveSockFd;
     int32_t lowerBound;
     int32_t upperBound;
@@ -74,22 +65,6 @@ int openDatabaseConnection(t_commonHandle *handle) {
     return res;
 }
 
-int initConfig(const char *configFilename, t_configHandle *configHandle) {
-    config_init(&(configHandle->cfg));
-    if (! config_read_file(&(configHandle->cfg), configFilename)) {
-        logmsg(LOG_ERR, "failed to read config file: %s:%d - %s\n",
-            config_error_file(&(configHandle->cfg)), config_error_line(&(configHandle->cfg)),
-            config_error_text(&(configHandle->cfg)));
-        config_destroy(&(configHandle->cfg));
-        return -1;
-    }
-
-    return 0;
-}
-
-void deinitConfig(t_configHandle *configHandle) {
-    config_destroy(&(configHandle->cfg));
-}
 
 // When you got a result here, remember to free it using freeDevice
 int findDevice(t_commonHandle *handle, char *deviceId) {
@@ -153,9 +128,7 @@ void freeDevice(t_commonHandle *handle) {
     }
 }
 
-int initReceiver(t_configHandle *configHandle, t_commonHandle *handle) {
-    handle->configHandle = configHandle;
-
+int initReceiver(t_commonHandle *handle) {
     struct sockaddr_in servaddr;
 
     handle->receiveSockFd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -165,11 +138,6 @@ int initReceiver(t_configHandle *configHandle, t_commonHandle *handle) {
     }
 
     int receivePort = 20169;
-    config_lookup_int(&(configHandle->cfg), "receivePort", &receivePort);
-    if (receivePort < 1 || receivePort > 65535) {
-        logmsg(LOG_ERR, "illegal receive port configured");
-        return -2;
-    }
 
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
@@ -230,15 +198,13 @@ int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
 }
 
 
-int initForwarder(t_configHandle *configHandle, t_commonHandle *handle) {
-    handle->configHandle = configHandle;
-
+int initForwarder(t_commonHandle *handle) {
     handle->conn = NULL;
 
-    handle->lowerBound = 45000;
-    config_lookup_int(&(configHandle->cfg), "lowerBound", &(handle->lowerBound));
-    handle->upperBound = 55000;
-    config_lookup_int(&(configHandle->cfg), "upperBound", &(handle->upperBound));
+    char *lowerBoundStr = getenv("LOWER_BOUND");
+    handle->lowerBound = lowerBoundStr ? strtol(lowerBoundStr, NULL, 10) : 45000
+    char *upperBoundStr = getenv("UPPER_BOUND");
+    handle->upperBound = upperBoundStr ? strtol(upperBoundStr, NULL, 10) : 55000
     logmsg(LOG_INFO, "lowerBound: %u, upperBound: %u", handle->lowerBound, handle->upperBound);
 
     return 0;
@@ -349,21 +315,16 @@ void usage() {
 }
 
 int main(int argc, char **argv) {
-    t_configHandle configHandle;
     t_commonHandle commonHandle;
     commonHandle.foundDevice.deviceResult = NULL;
 
 
-    const char *configFilename = DEFAULT_CONFIG_FILENAME;
     const char *dropPrivilegesToUser = NULL;
     bool doFork = false;
 
     int c;
-    while ((c = getopt(argc, argv, "f:vds:hn:b")) != -1) {
+    while ((c = getopt(argc, argv, "vds:hn:b")) != -1) {
         switch (c) {
-            case 'f':
-                configFilename = strdup(optarg);
-                break;
             case 'v':
                 verbose = true;
                 break;
@@ -402,11 +363,6 @@ int main(int argc, char **argv) {
 
     logmsg(LOG_INFO, "Version: " VERSION);
 
-    if (0 != initConfig(configFilename, &configHandle)) {
-        logmsg(LOG_ERR, "error when reading configuration");
-        exit(3);
-    }
-    
     if (doFork) {
         int pid = fork();
         if (pid == -1) {
@@ -419,12 +375,12 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (0 != initReceiver(&configHandle, &commonHandle)) {
+    if (0 != initReceiver(&commonHandle)) {
         logmsg(LOG_ERR, "error when initializing receiver");
         exit(5);
     }
 
-    if (0 != initForwarder(&configHandle, &commonHandle)) {
+    if (0 != initForwarder(&commonHandle)) {
         logmsg(LOG_ERR, "error when initializing forwarder");
         exit(6);
     }
@@ -450,5 +406,4 @@ int main(int argc, char **argv) {
 
     deinitForwarder(&commonHandle);
     deinitReceiver(&commonHandle);
-    deinitConfig(&configHandle);
 }
