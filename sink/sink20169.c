@@ -47,7 +47,6 @@ typedef struct {
     int receiveSockFd;
     int32_t lowerBound;
     int32_t upperBound;
-    const char *postgresqlConnInfo;
     PGconn *conn;
     t_device foundDevice;
 } t_commonHandle;
@@ -61,7 +60,7 @@ int openDatabaseConnection(t_commonHandle *handle) {
     
     if (! handle->conn) {
         logmsg(LOG_DEBUG, "Opening connection to database");
-        handle->conn = PQconnectdb(handle->postgresqlConnInfo);
+        handle->conn = PQconnectdb();
     } else if (PQstatus(handle->conn) != CONNECTION_OK) {
         logmsg(LOG_DEBUG, "Resetting connection to database");
         PQreset(handle->conn);
@@ -233,13 +232,6 @@ int receiveAndVerifyMinuteBuffer(t_commonHandle *handle, t_minuteBuffer *buf) {
 
 int initForwarder(t_configHandle *configHandle, t_commonHandle *handle) {
     handle->configHandle = configHandle;
-
-    handle->postgresqlConnInfo = NULL;
-    config_lookup_string(&(configHandle->cfg), "postgresqlConnInfo", &(handle->postgresqlConnInfo));
-    if (! handle->postgresqlConnInfo) {
-        logmsg(LOG_ERR, "no postgresql connInfo configured");
-        return -1;
-    }
 
     handle->conn = NULL;
 

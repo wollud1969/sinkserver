@@ -2,6 +2,12 @@ FROM alpine:3.18.3 AS builder
 
 ARG VERSION="dockerized"
 
+ENV PGHOST ""
+ENV PGDATABASE "mainscnt"
+ENV PGUSER "sink"
+ENV PGPASSWORD ""
+ENV PGSSLMODE "require"
+
 COPY sink/ /tmp/sink
 
 RUN \
