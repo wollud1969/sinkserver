@@ -60,7 +60,7 @@ int openDatabaseConnection(t_commonHandle *handle) {
     
     if (! handle->conn) {
         logmsg(LOG_DEBUG, "Opening connection to database");
-        handle->conn = PQconnectdb();
+        handle->conn = PQconnectdb("");
     } else if (PQstatus(handle->conn) != CONNECTION_OK) {
         logmsg(LOG_DEBUG, "Resetting connection to database");
         PQreset(handle->conn);
