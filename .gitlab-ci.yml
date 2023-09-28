@@ -1,5 +1,5 @@
 stages:
-    - build
+#    - build
     - deploy
 
 variables:
@@ -51,4 +51,11 @@ build:
 #          $IMAGE_NAME:$CI_COMMIT_TAG
 #    environment:
 #        name: production
+
+deploy:
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: ['']
+  script:
+    - kubectl config get-contexts
 
