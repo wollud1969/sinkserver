@@ -9,10 +9,10 @@ VERSION ?= $(shell git rev-parse --short=8 HEAD)
 UNAME_S := $(shell uname -s)
 
 CC = gcc
-CFLAGS = $(shell pkg-config --cflags libpq libconfig) -I. \
+CFLAGS = $(shell pkg-config --cflags libpq) -I. \
          -Wall -Werror -std=c99 \
 		 -D$(UNAME_S)=1 -DVERSION="\"$(VERSION)\""
-LDFLAGS = $(shell pkg-config --libs libpq libconfig)
+LDFLAGS = $(shell pkg-config --libs libpq)
 TARGET = sink20169
 
 all: $(BUILD_DIR)/$(TARGET)
