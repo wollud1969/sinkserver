@@ -1,29 +1,29 @@
 stages:
-#    - build
+    - build
     - deploy
 
 variables:
         IMAGE_NAME: $CI_REGISTRY/$CI_PROJECT_PATH
         HUB_IMAGE_NAME: wollud1969/sinkserver
 
-#build:
-#    image: registry.hottis.de/dockerized/docker-bash:latest
-#    stage: build
-#    tags:
-#        - hottis
-#        - linux
-#        - docker
-#    script: 
-#        - docker build --build-arg="VERSION=${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TAG}" --tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} .
-#        - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY;
-#        - docker push $IMAGE_NAME:${CI_COMMIT_SHORT_SHA}
-#        - if [ "$CI_COMMIT_TAG" != "" ]; then
-#            docker tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} $IMAGE_NAME:${CI_COMMIT_TAG};
-#            docker push $IMAGE_NAME:${CI_COMMIT_TAG};
-#          fi
-#        - docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD
-#        - docker tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} ${HUB_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
-#        - docker push ${HUB_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+build:
+    image: registry.hottis.de/dockerized/docker-bash:latest
+    stage: build
+    tags:
+        - hottis
+        - linux
+        - docker
+    script: 
+        - docker build --build-arg="VERSION=${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TAG}" --tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} .
+        - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY;
+        - docker push $IMAGE_NAME:${CI_COMMIT_SHORT_SHA}
+        - if [ "$CI_COMMIT_TAG" != "" ]; then
+            docker tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} $IMAGE_NAME:${CI_COMMIT_TAG};
+            docker push $IMAGE_NAME:${CI_COMMIT_TAG};
+          fi
+        - docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD
+        - docker tag $IMAGE_NAME:${CI_COMMIT_SHORT_SHA} ${HUB_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
+        - docker push ${HUB_IMAGE_NAME}:${CI_COMMIT_SHORT_SHA}
 
 
 # deploy:
@@ -52,11 +52,4 @@ variables:
 #    environment:
 #        name: production
 
-deploy:
-  stage: deploy
-  image:
-    name: bitnami/kubectl:latest
-    entrypoint: ['']
-  script:
-    - kubectl config get-contexts
 
