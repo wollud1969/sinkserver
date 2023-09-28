@@ -7,7 +7,6 @@ COPY sink/ /tmp/sink
 RUN \
   apk update && \
   apk add alpine-sdk && \
-  apk add libconfig-dev && \
   apk add postgresql-dev && \
   cd /tmp/sink && \
   make VERSION=${VERSION}
@@ -26,8 +25,7 @@ ENV UPPER_BOUND="56000"
 COPY --from=builder /tmp/sink/build/sink20169 /usr/local/bin/
 
 RUN \
-  apk add --no-cache libpq && \
-  apk add --no-cache libconfig 
+  apk add --no-cache libpq 
 
 EXPOSE 20169/udp
 USER nobody
