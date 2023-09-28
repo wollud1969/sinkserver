@@ -53,6 +53,7 @@ variables:
 #        name: production
 
 deploy:
+  stage: deploy
   image:
     name: bitnami/kubectl:latest
     entrypoint: ['']
